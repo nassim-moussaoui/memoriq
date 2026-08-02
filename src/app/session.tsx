@@ -35,6 +35,7 @@ export default function SessionScreen() {
   const arabicFontScale = useAppStore((s) => s.arabicFontScale);
   const showTranslation = useAppStore((s) => s.showTranslation);
   const registerSessionDone = useAppStore((s) => s.registerSessionDone);
+  const minutesPerDay = useAppStore((s) => s.minutesPerDay);
   const remindersEnabled = useAppStore((s) => s.remindersEnabled);
   const setRemindersEnabled = useAppStore((s) => s.setRemindersEnabled);
   const setReminderTime = useAppStore((s) => s.setReminderTime);
@@ -46,9 +47,10 @@ export default function SessionScreen() {
   // The queue is frozen at mount; "Again" ratings re-append the item so it is
   // retried before the session ends (in-session relearning).
   const initialQueue = useMemo(() => {
-    const plan = mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah);
+    const plan =
+      mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah, minutesPerDay);
     return [...plan.newItems, ...plan.reviewItems];
-  }, [activeSurah, mode]);
+  }, [activeSurah, minutesPerDay, mode]);
 
   const [queue, setQueue] = useState<SessionItem[]>(initialQueue);
   const [index, setIndex] = useState(0);

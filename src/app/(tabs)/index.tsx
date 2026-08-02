@@ -10,7 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getChapter } from '@/lib/quran';
 import { getNextDueAt } from '@/lib/srs/db';
-import { buildSessionPlan, type SessionPlan } from '@/lib/srs/queue';
+import { buildSessionPlan, estimateMinutes, type SessionPlan } from '@/lib/srs/queue';
 import { useAppStore } from '@/lib/store';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -37,12 +37,14 @@ export default function TodayScreen() {
   const theme = useTheme();
   const activeSurah = useAppStore((s) => s.activeSurah);
   const streak = useAppStore((s) => s.streak);
+  const minutesPerDay = useAppStore((s) => s.minutesPerDay);
+  const reviewMoment = useAppStore((s) => s.reviewMoment);
   const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [nextDue, setNextDue] = useState<NextDue | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      const built = buildSessionPlan(activeSurah);
+      const built = buildSessionPlan(activeSurah, minutesPerDay);
       setPlan(built);
       if (built.newItems.length + built.reviewItems.length === 0) {
         const ts = getNextDueAt();
@@ -50,7 +52,7 @@ export default function TodayScreen() {
       } else {
         setNextDue(null);
       }
-    }, [activeSurah, i18n.language])
+    }, [activeSurah, minutesPerDay, i18n.language])
   );
 
   const chapter = getChapter(activeSurah);
@@ -58,7 +60,9 @@ export default function TodayScreen() {
   const newCount = plan?.newItems.length ?? 0;
   const reviewCount = plan?.reviewItems.length ?? 0;
   const hasWork = newCount + reviewCount > 0;
-  const estimatedMinutes = Math.max(1, Math.ceil(newCount * 1.5 + reviewCount * 0.5));
+  const estimatedMinutes = plan ? estimateMinutes(plan) : 1;
+  // Reviews beyond the daily budget: say so instead of implying "all done".
+  const extraDue = Math.max(0, (plan?.dueTotal ?? 0) - reviewCount);
 
   const streakColor = streak > 0 ? theme.tint : theme.textSecondary;
 
@@ -120,6 +124,20 @@ export default function TodayScreen() {
                 {t('today.estimated', { minutes: estimatedMinutes })}
               </ThemedText>
             </View>
+            {plan?.segment && newCount > 0 && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('today.segmentPreview', {
+                  surah: chapter.nameSimple,
+                  from: plan.newItems[0].ayah,
+                  to: plan.newItems[plan.newItems.length - 1].ayah,
+                })}
+              </ThemedText>
+            )}
+            {extraDue > 0 && (
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('today.moreDue', { count: extraDue })}
+              </ThemedText>
+            )}
             <Pressable
               style={[styles.primaryButton, { backgroundColor: theme.tint }]}
               onPress={() => router.push('/session')}>
@@ -172,9 +190,19 @@ export default function TodayScreen() {
         )}
 
         <View style={styles.tipRow}>
-          <Ionicons name="moon-outline" size={16} color={theme.textSecondary} />
+          <Ionicons
+            name={
+              reviewMoment === 'morning'
+                ? 'sunny-outline'
+                : reviewMoment === 'afterPrayer'
+                  ? 'compass-outline'
+                  : 'moon-outline'
+            }
+            size={16}
+            color={theme.textSecondary}
+          />
           <ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>
-            {t('today.eveningTip')}
+            {t(`today.tip.${reviewMoment}`)}
           </ThemedText>
         </View>
         </ScrollView>

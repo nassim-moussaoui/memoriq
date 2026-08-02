@@ -1,6 +1,12 @@
 import { getChapter } from "@/lib/quran";
 
-import { getDueItems, getSoonestItems, getStartedAyahs } from "./db";
+import {
+  countDue,
+  countNewIntroducedToday,
+  getDueItems,
+  getSoonestItems,
+  getStartedAyahs,
+} from "./db";
 import { segmentSurah, type Segment } from "./segments";
 
 /**
@@ -20,7 +26,30 @@ export type SessionPlan = {
   reviewItems: SessionItem[];
   /** Segment the new items belong to, if any. */
   segment: Segment | null;
+  /** Total reviews actually due, before the budget cap. */
+  dueTotal: number;
 };
+
+/**
+ * Session sizing derived from the minutes-per-day chosen in onboarding.
+ * `maxNew` is a per-day cap (not per-session): short sessions can be
+ * repeated the same day until the cap is reached.
+ */
+export function budgetFor(minutesPerDay: 5 | 10 | 20): { maxNew: number; maxReviews: number } {
+  switch (minutesPerDay) {
+    case 5:
+      return { maxNew: 3, maxReviews: 8 };
+    case 20:
+      return { maxNew: 10, maxReviews: 40 };
+    default:
+      return { maxNew: 5, maxReviews: 20 };
+  }
+}
+
+/** Same time model the budget uses: about 90s per new verse, 30s per review. */
+export function estimateMinutes(plan: SessionPlan): number {
+  return Math.max(1, Math.ceil(plan.newItems.length * 1.5 + plan.reviewItems.length * 0.5));
+}
 
 /** The next not-yet-started segment of a surah, or null when all started. */
 export function nextSegment(surahId: number): Segment | null {
@@ -34,24 +63,28 @@ export function nextSegment(surahId: number): Segment | null {
   return null;
 }
 
-export function buildSessionPlan(activeSurah: number, maxReviews = 40): SessionPlan {
-  const segment = nextSegment(activeSurah);
+export function buildSessionPlan(activeSurah: number, minutesPerDay: 5 | 10 | 20 = 10): SessionPlan {
+  const budget = budgetFor(minutesPerDay);
+  const newBudget = Math.max(0, budget.maxNew - countNewIntroducedToday());
+
+  const segment = newBudget > 0 ? nextSegment(activeSurah) : null;
   const started = getStartedAyahs(activeSurah);
 
   const newItems: SessionItem[] = [];
   if (segment) {
     for (let a = segment.start; a <= segment.end; a++) {
+      if (newItems.length >= newBudget) break;
       if (!started.has(a)) newItems.push({ surah: activeSurah, ayah: a, kind: "new" });
     }
   }
 
-  const reviewItems: SessionItem[] = getDueItems(Date.now(), maxReviews).map((item) => ({
+  const reviewItems: SessionItem[] = getDueItems(Date.now(), budget.maxReviews).map((item) => ({
     surah: item.surah,
     ayah: item.ayah,
     kind: "review" as const,
   }));
 
-  return { newItems, reviewItems, segment };
+  return { newItems, reviewItems, segment, dueTotal: countDue() };
 }
 
 /**
@@ -64,5 +97,5 @@ export function buildReviewAheadPlan(limit = 12): SessionPlan {
     ayah: item.ayah,
     kind: "review" as const,
   }));
-  return { newItems: [], reviewItems, segment: null };
+  return { newItems: [], reviewItems, segment: null, dueTotal: 0 };
 }

@@ -108,6 +108,22 @@ export function countDue(now: number = Date.now()): number {
   return row?.n ?? 0;
 }
 
+/**
+ * Number of verses introduced today (their first rating ever is today).
+ * Used to enforce the daily new-material cap of the session budget.
+ */
+export function countNewIntroducedToday(now: number = Date.now()): number {
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const row = db.getFirstSync<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM (
+       SELECT MIN(reviewed_at) AS first_at FROM review_logs GROUP BY surah, ayah
+     ) WHERE first_at >= ?`,
+    [startOfDay.getTime()]
+  );
+  return row?.n ?? 0;
+}
+
 /** Ayah numbers of a surah the user has already started learning. */
 export function getStartedAyahs(surah: number): Set<number> {
   const rows = db.getAllSync<{ ayah: number }>(

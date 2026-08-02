@@ -25,7 +25,14 @@
     "reviewAhead": "Review ahead",
     "explore": "Explore the surahs",
     "activeSurah": "Current surah",
-    "eveningTip": "Tip: a short review right before sleeping improves consolidation (sleep science).",
+    "segmentPreview": "New: {{surah}}, verses {{from}} to {{to}}",
+    "moreDue_one": "{{count}} more review will wait for your next session",
+    "moreDue_other": "{{count}} more reviews will wait for your next session",
+    "tip": {
+      "morning": "Tip: reviewing with a fresh mind, before the day starts, takes less effort.",
+      "afterPrayer": "Tip: anchor your review to a prayer. A habit holds much better when it follows something already in your day.",
+      "evening": "Tip: a short review right before sleeping improves consolidation (sleep science)."
+    },
     "changeSurah": "Change"
   },
   "library": {

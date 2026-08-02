@@ -9,6 +9,22 @@ export type Level = "beginner" | "intermediate" | "advanced";
 export type Goal = "juzamma" | "prayer" | "hifz";
 export type ReviewMoment = "morning" | "afterPrayer" | "evening";
 
+/**
+ * Where each goal starts. Juz' 'Amma works backwards from the shortest surah
+ * (An-Nas), prayer starts with the one most recited in salat (Al-Ikhlas), and
+ * full hifz follows the structured order from the top of Juz' 'Amma.
+ */
+export function startingSurahForGoal(goal: Goal): number {
+  switch (goal) {
+    case "prayer":
+      return 112;
+    case "hifz":
+      return 78;
+    default:
+      return 114;
+  }
+}
+
 type AppState = {
   onboardingCompleted: boolean;
   level: Level;
@@ -88,7 +104,17 @@ export const useAppStore = create<AppState>()(
       lastSyncAt: null,
 
       completeOnboarding: ({ minutesPerDay, goal, reviewMoment }) =>
-        set({ onboardingCompleted: true, minutesPerDay, goal, reviewMoment }),
+        set((state) => ({
+          onboardingCompleted: true,
+          minutesPerDay,
+          goal,
+          reviewMoment,
+          // The goal only aims the very first surah; revisiting the plan later
+          // never moves the user off the surah they are working on.
+          activeSurah: state.onboardingCompleted
+            ? state.activeSurah
+            : startingSurahForGoal(goal),
+        })),
       setActiveSurah: (activeSurah) => set({ activeSurah }),
       setRemindersEnabled: (remindersEnabled) => set({ remindersEnabled }),
       setReminderTime: (reminderTime) => set({ reminderTime }),

@@ -25,7 +25,14 @@
     "reviewAhead": "Réviser en avance",
     "explore": "Explorer les sourates",
     "activeSurah": "Sourate en cours",
-    "eveningTip": "Astuce : une courte révision juste avant de dormir améliore la consolidation (science du sommeil).",
+    "segmentPreview": "Nouveau : {{surah}}, versets {{from}} à {{to}}",
+    "moreDue_one": "{{count}} révision de plus attendra la prochaine session",
+    "moreDue_other": "{{count}} révisions de plus attendront la prochaine session",
+    "tip": {
+      "morning": "Astuce : réviser l'esprit frais, avant que la journée ne commence, demande moins d'effort.",
+      "afterPrayer": "Astuce : accroche ta révision à une prière, l'habitude tient bien mieux quand elle suit un rendez-vous déjà présent.",
+      "evening": "Astuce : une courte révision juste avant de dormir améliore la consolidation (science du sommeil)."
+    },
     "changeSurah": "Changer"
   },
   "library": {
