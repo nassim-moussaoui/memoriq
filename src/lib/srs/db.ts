@@ -1,0 +1,155 @@
+import * as SQLite from "expo-sqlite";
+
+import { deserializeCard, serializeCard, State, type Card } from "./scheduler";
+
+/**
+ * Local, offline-first persistence of the memorization state. One row per
+ * (surah, ayah) the user has started learning. Will be synced to Supabase in
+ * a later phase; SQLite stays the source of truth on device.
+ */
+const db = SQLite.openDatabaseSync("memoriq.db");
+
+db.execSync(`
+  PRAGMA journal_mode = WAL;
+  CREATE TABLE IF NOT EXISTS memorization_items (
+    surah INTEGER NOT NULL,
+    ayah INTEGER NOT NULL,
+    card TEXT NOT NULL,
+    due_at INTEGER NOT NULL,
+    state INTEGER NOT NULL,
+    PRIMARY KEY (surah, ayah)
+  );
+  CREATE INDEX IF NOT EXISTS idx_items_due ON memorization_items (due_at);
+  CREATE TABLE IF NOT EXISTS review_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    surah INTEGER NOT NULL,
+    ayah INTEGER NOT NULL,
+    rating INTEGER NOT NULL,
+    reviewed_at INTEGER NOT NULL
+  );
+`);
+
+export type ItemRow = {
+  surah: number;
+  ayah: number;
+  card: Card;
+  dueAt: number;
+  state: State;
+};
+
+type RawRow = { surah: number; ayah: number; card: string; due_at: number; state: number };
+
+function toItem(row: RawRow): ItemRow {
+  return {
+    surah: row.surah,
+    ayah: row.ayah,
+    card: deserializeCard(row.card),
+    dueAt: row.due_at,
+    state: row.state as State,
+  };
+}
+
+export function getItem(surah: number, ayah: number): ItemRow | null {
+  const row = db.getFirstSync<RawRow>(
+    "SELECT * FROM memorization_items WHERE surah = ? AND ayah = ?",
+    [surah, ayah]
+  );
+  return row ? toItem(row) : null;
+}
+
+export function saveItem(surah: number, ayah: number, card: Card): void {
+  db.runSync(
+    `INSERT INTO memorization_items (surah, ayah, card, due_at, state)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT (surah, ayah) DO UPDATE SET card = excluded.card, due_at = excluded.due_at, state = excluded.state`,
+    [surah, ayah, serializeCard(card), card.due.getTime(), card.state]
+  );
+}
+
+export function logReview(surah: number, ayah: number, rating: number, now: number = Date.now()): void {
+  db.runSync(
+    "INSERT INTO review_logs (surah, ayah, rating, reviewed_at) VALUES (?, ?, ?, ?)",
+    [surah, ayah, rating, now]
+  );
+}
+
+/** All items due for review, most overdue first. */
+export function getDueItems(now: number = Date.now(), limit = 50): ItemRow[] {
+  const rows = db.getAllSync<RawRow>(
+    "SELECT * FROM memorization_items WHERE due_at <= ? ORDER BY due_at ASC LIMIT ?",
+    [now, limit]
+  );
+  return rows.map(toItem);
+}
+
+export function countDue(now: number = Date.now()): number {
+  const row = db.getFirstSync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM memorization_items WHERE due_at <= ?",
+    [now]
+  );
+  return row?.n ?? 0;
+}
+
+/** Ayah numbers of a surah the user has already started learning. */
+export function getStartedAyahs(surah: number): Set<number> {
+  const rows = db.getAllSync<{ ayah: number }>(
+    "SELECT ayah FROM memorization_items WHERE surah = ?",
+    [surah]
+  );
+  return new Set(rows.map((r) => r.ayah));
+}
+
+/** Per-surah count of ayahs in Review state (i.e. considered memorized). */
+export function getMemorizedCountBySurah(): Map<number, number> {
+  const rows = db.getAllSync<{ surah: number; n: number }>(
+    "SELECT surah, COUNT(*) AS n FROM memorization_items WHERE state = ? GROUP BY surah",
+    [State.Review]
+  );
+  return new Map(rows.map((r) => [r.surah, r.n]));
+}
+
+export function getStartedCountBySurah(): Map<number, number> {
+  const rows = db.getAllSync<{ surah: number; n: number }>(
+    "SELECT surah, COUNT(*) AS n FROM memorization_items GROUP BY surah"
+  );
+  return new Map(rows.map((r) => [r.surah, r.n]));
+}
+
+export type Totals = {
+  startedVerses: number;
+  memorizedVerses: number;
+  totalReviews: number;
+  reviewsToday: number;
+};
+
+export function getTotals(now: number = Date.now()): Totals {
+  const startOfDay = new Date(now);
+  startOfDay.setHours(0, 0, 0, 0);
+  const started = db.getFirstSync<{ n: number }>("SELECT COUNT(*) AS n FROM memorization_items");
+  const memorized = db.getFirstSync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM memorization_items WHERE state = ?",
+    [State.Review]
+  );
+  const reviews = db.getFirstSync<{ n: number }>("SELECT COUNT(*) AS n FROM review_logs");
+  const today = db.getFirstSync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM review_logs WHERE reviewed_at >= ?",
+    [startOfDay.getTime()]
+  );
+  return {
+    startedVerses: started?.n ?? 0,
+    memorizedVerses: memorized?.n ?? 0,
+    totalReviews: reviews?.n ?? 0,
+    reviewsToday: today?.n ?? 0,
+  };
+}
+
+/** Daily review counts for the last `days` days (for the stats heatmap). */
+export function getDailyReviewCounts(days = 90, now: number = Date.now()): Map<string, number> {
+  const since = now - days * 24 * 60 * 60 * 1000;
+  const rows = db.getAllSync<{ day: string; n: number }>(
+    `SELECT date(reviewed_at / 1000, 'unixepoch', 'localtime') AS day, COUNT(*) AS n
+     FROM review_logs WHERE reviewed_at >= ? GROUP BY day`,
+    [since]
+  );
+  return new Map(rows.map((r) => [r.day, r.n]));
+}
