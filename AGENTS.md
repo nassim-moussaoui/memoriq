@@ -16,10 +16,15 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 - `src/data/quran/`: **generated** offline dataset (114 chapters, 6236 verses: Uthmani text, FR Hamidullah, EN Saheeh International, transliteration). Regenerate with `node scripts/build-quran-data.mjs`; never edit by hand.
 - `src/lib/quran.ts`: chapter metadata + lazy per-surah verse loading; `isFreeSurah()` is the free-tier gate.
 - `src/lib/audio.ts`: reciters + everyayah.com per-ayah mp3 URLs (default: Husary Mu'allim, the teaching recitation).
-- `src/lib/srs/`: the learning engine: `scheduler.ts` (ts-fsrs wrapper), `db.ts` (expo-sqlite persistence, sync API), `segments.ts` (chunking), `queue.ts` (daily session = new segment + due reviews).
-- `src/lib/store.ts`: zustand + AsyncStorage: settings, onboarding, streak, premium flag.
+- `src/lib/srs/`: the learning engine: `scheduler.ts` (ts-fsrs wrapper + `previewIntervals` for the rating buttons), `db.ts` (expo-sqlite persistence, sync API), `segments.ts` (chunking), `queue.ts` (daily session sized by `budgetFor(minutesPerDay)`, with a per-day cap on new verses).
+- `src/lib/notifications.ts`: the daily reminder (expo-notifications) anchored on `reviewMoment`, rescheduled after each session, plus the app icon badge.
+- `src/lib/store.ts`: zustand + AsyncStorage (persist `version: 1`): plan (goal, minutesPerDay, reviewMoment), reminders, playback rate, settings, streak, premium flag. `startingSurahForGoal()` aims the first surah.
 - `src/lib/i18n.ts` + `src/locales/{fr,en}.json`: all UI strings go through i18next; keep both files in sync.
-- `src/app/`: Expo Router: `(tabs)` (today/library/stats/profile), `surah/[id]`, `session` (the learning loop: listen phase, then blurred-verse recall with tap-to-reveal phonetics in `src/components/recall-verse.tsx`), `onboarding` (science + sunna explainer with animated SVG charts), `paywall` (placeholder until RevenueCat).
+- `src/app/`: Expo Router: `(tabs)` (today/library/stats/profile), `surah/[id]`, `session` (the learning loop: listen phase, then blurred-verse recall with tap-to-reveal phonetics in `src/components/recall-verse.tsx`; `?mode=ahead` builds a review-ahead session), `onboarding` (science + sunna explainer with animated SVG charts), `paywall` (honest "coming soon" placeholder until RevenueCat).
+
+## Roadmap
+
+Batches A (dead ends) and B (habit loop) are done. The remaining plan lives in `C:\Users\azert\.claude\plans\snug-munching-clarke.md`: batch C (library search and progress bars, stats charts, reader per-verse state, audio disk cache) and batch D (error boundaries, full settings, password reset and deep links, background audio).
 
 ## Conventions
 
