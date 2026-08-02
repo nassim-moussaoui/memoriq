@@ -8,7 +8,8 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 
 - **Differentiator**: every mechanic maps to a documented cognitive-science effect — spaced repetition (FSRS via `ts-fsrs`), active recall with progressive text masking, chunking into 3–5 verse segments, dual coding (text + per-ayah audio), the traditional hifz structure (sabaq/sabqi/manzil) reframed as spaced repetition.
 - **Monetization (phase 5, not wired yet)**: free = Al-Fatiha + Juz' 'Amma (surahs 78–114); premium via RevenueCat; "Sadaqa" = gift a subscription to a student (present as gifting, never as charity — Apple guideline 3.2.2).
-- **Backend (phase 4, coded — migration not yet applied)**: Supabase project `kawcqhogalppljvhgikj`. Apply `supabase/migrations/0001_init.sql` via the MCP server or the dashboard SQL editor, and put the anon key in `.env.local` (see `.env.example`). SQLite on device stays the source of truth; `src/lib/sync.ts` does launch/post-session/manual sync (merge rule: FSRS card with more reps wins).
+- **Backend (phase 4, live)**: Supabase project `kawcqhogalppljvhgikj` — migrations `0001_init` + `0002_harden_functions` applied (6 tables, RLS on), anon key in `.env.local` (gitignored; see `.env.example`). SQLite on device stays the source of truth; `src/lib/sync.ts` does launch/post-session/manual sync (merge rule: FSRS card with more reps wins).
+- **Running the app**: development build (`expo-dev-client` + EAS), because the test phone's Expo Go is stuck on SDK 54. Start with `npx expo start --dev-client`.
 
 ## Architecture
 
