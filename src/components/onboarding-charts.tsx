@@ -1,187 +1,505 @@
-import { View } from 'react-native';
-import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import { useEffect, type ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedProps,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
+import Svg, {
+  Circle,
+  Defs,
+  G,
+  Line,
+  LinearGradient,
+  Path,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 
+import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * Educational illustrations for the onboarding. Design rules: one accent hue
- * (theme.tint) + neutral gray for the comparison series, 2px lines, direct
- * labels instead of legends, recessive grid, text in text colors.
+ * Animated educational charts for the onboarding. Design rules: one accent hue
+ * (theme.tint) for the story series, de-emphasized gray for the comparison
+ * (identity also carried by stroke weight + legend, never color alone), 2px
+ * lines, hairline solid grid, selective direct labels, text in text tokens.
+ * Charts draw themselves each time `active` flips to true.
  */
-const W = 300;
-const H = 160;
-const PAD = { top: 16, right: 12, bottom: 24, left: 34 };
-const PLOT_W = W - PAD.left - PAD.right;
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedG = Animated.createAnimatedComponent(G);
+
+const H = 200;
+const PAD = { top: 18, right: 18, bottom: 30, left: 44 };
 const PLOT_H = H - PAD.top - PAD.bottom;
+const MAX_DAY = 30;
+const BAR_W = 24;
 
-function x(day: number, maxDay: number): number {
-  return PAD.left + (day / maxDay) * PLOT_W;
-}
-
-function y(retention: number): number {
+function yScale(retention: number): number {
+  'worklet';
   return PAD.top + (1 - retention) * PLOT_H;
 }
 
-function decayPath(maxDay: number, stability: number, from = 0, initial = 1): string {
-  const points: string[] = [];
-  for (let d = from; d <= maxDay; d += maxDay / 60) {
-    const r = initial * Math.exp(-(d - from) / stability);
-    points.push(`${points.length === 0 ? 'M' : 'L'}${x(d, maxDay).toFixed(1)},${y(r).toFixed(1)}`);
+type Pt = { x: number; y: number };
+type Window = readonly [number, number];
+
+/** Path data + arc length of a sampled polyline (for stroke-dash drawing). */
+function polyline(points: Pt[]) {
+  let length = 0;
+  const cum: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    length += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    cum.push(length);
   }
-  return points.join(' ');
+  const d = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ');
+  return { d, length, cum };
 }
 
-function Frame({ children, yLabel }: { children: React.ReactNode; yLabel: string }) {
-  const theme = useTheme();
+function decayPoints(
+  xOf: (day: number) => number,
+  from: number,
+  to: number,
+  stability: number,
+): Pt[] {
+  const pts: Pt[] = [];
+  const step = (to - from) / 48;
+  for (let d = from; d <= to + 1e-6; d += step) {
+    pts.push({ x: xOf(d), y: yScale(Math.exp(-(d - from) / stability)) });
+  }
+  return pts;
+}
+
+/**
+ * Master timeline of a chart: 0 → 1 (linear, so sub-windows map to exact
+ * fractions of the drawing). Restarts whenever `active` becomes true.
+ */
+function useChartProgress(active: boolean, duration: number): SharedValue<number> {
+  const reduceMotion = useReducedMotion();
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    if (active) {
+      progress.value = 0;
+      progress.value = reduceMotion
+        ? 1
+        : withDelay(250, withTiming(1, { duration, easing: Easing.linear }));
+    } else {
+      progress.value = 0;
+    }
+  }, [active, duration, progress, reduceMotion]);
+  return progress;
+}
+
+/** A line that draws itself left → right inside its window of the timeline. */
+function DrawnPath({
+  progress,
+  window: win,
+  d,
+  length,
+  color,
+  strokeWidth = 2,
+  opacity = 1,
+}: {
+  progress: SharedValue<number>;
+  window: Window;
+  d: string;
+  length: number;
+  color: string;
+  strokeWidth?: number;
+  opacity?: number;
+}) {
+  const animatedProps = useAnimatedProps(() => {
+    const t = interpolate(progress.value, [win[0], win[1]], [0, 1], Extrapolation.CLAMP);
+    return { strokeDashoffset: length * (1 - t) };
+  });
   return (
-    <Svg width={W} height={H}>
-      {/* recessive grid: two horizontal lines at 50% and 100% */}
-      {[0.5, 1].map((r) => (
+    <AnimatedPath
+      d={d}
+      animatedProps={animatedProps}
+      stroke={color}
+      strokeWidth={strokeWidth}
+      opacity={opacity}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={[length, length]}
+      fill="none"
+    />
+  );
+}
+
+/** A marker dot (with its 2px surface ring) popping in at `at`. */
+function PopDot({
+  progress,
+  at,
+  cx,
+  cy,
+  color,
+  surface,
+}: {
+  progress: SharedValue<number>;
+  at: number;
+  cx: number;
+  cy: number;
+  color: string;
+  surface: string;
+}) {
+  const animatedProps = useAnimatedProps(() => {
+    const t = interpolate(progress.value, [at, Math.min(at + 0.06, 1)], [0, 1], Extrapolation.CLAMP);
+    const k = Easing.out(Easing.back(2.2))(t);
+    return { r: Math.max(k * 5, 0), opacity: t === 0 ? 0 : 1 };
+  });
+  return (
+    <AnimatedCircle
+      cx={cx}
+      cy={cy}
+      fill={color}
+      stroke={surface}
+      strokeWidth={2}
+      animatedProps={animatedProps}
+    />
+  );
+}
+
+/** Fades its children in once the timeline reaches `at`. */
+function FadeG({
+  progress,
+  at,
+  children,
+}: {
+  progress: SharedValue<number>;
+  at: number;
+  children: ReactNode;
+}) {
+  const animatedProps = useAnimatedProps(() => ({
+    opacity: interpolate(progress.value, [at, Math.min(at + 0.1, 1)], [0, 1], Extrapolation.CLAMP),
+  }));
+  return <AnimatedG animatedProps={animatedProps}>{children}</AnimatedG>;
+}
+
+/** Recessive frame: hairline grid at 100/50%, baseline, y ticks, x label. */
+function Frame({
+  width,
+  xLabel,
+  children,
+}: {
+  width: number;
+  xLabel?: string;
+  children: ReactNode;
+}) {
+  const theme = useTheme();
+  const right = width - PAD.right;
+  return (
+    <Svg width={width} height={H}>
+      {[1, 0.5].map((r) => (
         <Line
           key={r}
           x1={PAD.left}
-          y1={y(r)}
-          x2={W - PAD.right}
-          y2={y(r)}
-          stroke={theme.backgroundSelected}
+          y1={yScale(r)}
+          x2={right}
+          y2={yScale(r)}
+          stroke={theme.backgroundElement}
           strokeWidth={1}
         />
       ))}
-      <SvgText x={PAD.left - 6} y={y(1) + 4} fontSize={10} fill={theme.textSecondary} textAnchor="end">
-        100%
+      <Line
+        x1={PAD.left}
+        y1={yScale(0)}
+        x2={right}
+        y2={yScale(0)}
+        stroke={theme.backgroundSelected}
+        strokeWidth={1}
+      />
+      <SvgText x={PAD.left - 8} y={yScale(1) + 3.5} fontSize={10} fill={theme.textSecondary} textAnchor="end">
+        100 %
       </SvgText>
-      <SvgText x={PAD.left - 6} y={y(0.5) + 4} fontSize={10} fill={theme.textSecondary} textAnchor="end">
-        50%
+      <SvgText x={PAD.left - 8} y={yScale(0.5) + 3.5} fontSize={10} fill={theme.textSecondary} textAnchor="end">
+        50 %
       </SvgText>
-      <SvgText x={W - PAD.right} y={H - 6} fontSize={10} fill={theme.textSecondary} textAnchor="end">
-        {yLabel}
-      </SvgText>
+      {xLabel ? (
+        <SvgText x={(PAD.left + right) / 2} y={H - 8} fontSize={10} fill={theme.textSecondary} textAnchor="middle">
+          {xLabel}
+        </SvgText>
+      ) : null}
       {children}
     </Svg>
   );
 }
 
-/** Slide 1: the Ebbinghaus forgetting curve — a single decaying series. */
-export function ForgettingCurveChart({ daysLabel }: { daysLabel: string }) {
+/**
+ * Slide 1: the Ebbinghaus forgetting curve draws itself down, the area wash
+ * fades in, and a dot marks where memory crosses the 50% gridline.
+ */
+export function ForgettingCurveChart({
+  active,
+  width,
+  xLabel,
+}: {
+  active: boolean;
+  width: number;
+  xLabel: string;
+}) {
   const theme = useTheme();
+  const progress = useChartProgress(active, 1800);
+  const plotW = width - PAD.left - PAD.right;
+  const xOf = (day: number) => PAD.left + (day / MAX_DAY) * plotW;
+
+  const pts = decayPoints(xOf, 0, MAX_DAY, 6);
+  const { d, length, cum } = polyline(pts);
+  const areaD = `${d} L${xOf(MAX_DAY).toFixed(1)},${yScale(0)} L${xOf(0).toFixed(1)},${yScale(0)} Z`;
+
+  const DRAW: Window = [0, 0.9];
+  // Fraction of the arc length where the curve crosses the 50% gridline.
+  const halfIndex = Math.max(pts.findIndex((p) => p.y >= yScale(0.5)), 0);
+  const halfAt = (cum[halfIndex] / length) * DRAW[1];
+
   return (
-    <View>
-      <Frame yLabel={daysLabel}>
-        <Path d={decayPath(30, 6)} stroke={theme.tint} strokeWidth={2} fill="none" />
-      </Frame>
-    </View>
+    <Frame width={width} xLabel={xLabel}>
+      <Defs>
+        <LinearGradient id="forgetFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={theme.tint} stopOpacity={0.16} />
+          <Stop offset="1" stopColor={theme.tint} stopOpacity={0.01} />
+        </LinearGradient>
+      </Defs>
+      <FadeG progress={progress} at={0.5}>
+        <Path d={areaD} fill="url(#forgetFill)" />
+      </FadeG>
+      <DrawnPath progress={progress} window={DRAW} d={d} length={length} color={theme.tint} />
+      <PopDot
+        progress={progress}
+        at={halfAt}
+        cx={xOf(6 * Math.LN2)}
+        cy={yScale(0.5)}
+        color={theme.tint}
+        surface={theme.background}
+      />
+      <PopDot
+        progress={progress}
+        at={DRAW[1]}
+        cx={pts[pts.length - 1].x}
+        cy={pts[pts.length - 1].y}
+        color={theme.tint}
+        surface={theme.background}
+      />
+    </Frame>
   );
 }
 
 /**
- * Slide 2: the same decay, but each review (dot) resets retention to 100% and
- * slows the next decay — the curve flattens. The gray reference series shows
- * what happens without reviews.
+ * Slide 2: the gray decay draws first, then one continuous saw-tooth draws in
+ * accent: memory decays naturally, shoots back to 100% at each review (dot),
+ * and every following decay is flatter than the last.
  */
 export function SpacedRepetitionChart({
-  daysLabel,
-  withLabel,
-  withoutLabel,
+  active,
+  width,
+  xLabel,
 }: {
-  daysLabel: string;
-  withLabel: string;
-  withoutLabel: string;
+  active: boolean;
+  width: number;
+  xLabel: string;
 }) {
   const theme = useTheme();
-  const maxDay = 30;
+  const progress = useChartProgress(active, 2600);
+  const plotW = width - PAD.left - PAD.right;
+  const xOf = (day: number) => PAD.left + (day / MAX_DAY) * plotW;
+
+  const gray = polyline(decayPoints(xOf, 0, MAX_DAY, 6));
   const reviews = [
-    { day: 0, stability: 6 },
-    { day: 3, stability: 12 },
+    { day: 0, stability: 4.5 },
+    { day: 3, stability: 13 },
     { day: 10, stability: 30 },
     { day: 22, stability: 80 },
   ];
-  const segments = reviews.map((r, i) => {
-    const end = reviews[i + 1]?.day ?? maxDay;
-    const points: string[] = [];
-    for (let d = r.day; d <= end; d += 0.5) {
-      const ret = Math.exp(-(d - r.day) / r.stability);
-      points.push(`${points.length === 0 ? 'M' : 'L'}${x(d, maxDay).toFixed(1)},${y(ret).toFixed(1)}`);
-    }
-    return points.join(' ');
+  // One continuous path: consecutive decay segments start back at 100%, so the
+  // polyline naturally draws the vertical rise at each review. Remember where
+  // each peak sits in the arc length so its dot pops as the pen passes it.
+  const pts: Pt[] = [];
+  const peakIndices: number[] = [];
+  reviews.forEach((r, i) => {
+    const end = reviews[i + 1]?.day ?? MAX_DAY;
+    if (i > 0) peakIndices.push(pts.length);
+    pts.push(...decayPoints(xOf, r.day, end, r.stability));
   });
+  const main = polyline(pts);
+  const MAIN: Window = [0.26, 0.96];
+  const peakAt = (k: number) =>
+    MAIN[0] + (main.cum[peakIndices[k]] / main.length) * (MAIN[1] - MAIN[0]);
 
   return (
-    <View>
-      <Frame yLabel={daysLabel}>
-        <Path d={decayPath(maxDay, 6)} stroke={theme.textSecondary} strokeWidth={2} fill="none" opacity={0.45} />
-        {segments.map((d, i) => (
-          <Path key={i} d={d} stroke={theme.tint} strokeWidth={2} fill="none" />
-        ))}
-        {reviews.slice(1).map((r) => (
-          <Circle key={r.day} cx={x(r.day, maxDay)} cy={y(1)} r={4} fill={theme.tint} />
-        ))}
-        {/* direct labels, no legend */}
-        <SvgText x={x(20, maxDay)} y={y(0.92) - 6} fontSize={10} fill={theme.tint} textAnchor="middle">
-          {withLabel}
-        </SvgText>
-        <SvgText x={x(16, maxDay)} y={y(0.04)} fontSize={10} fill={theme.textSecondary} textAnchor="middle">
-          {withoutLabel}
-        </SvgText>
-      </Frame>
-    </View>
+    <Frame width={width} xLabel={xLabel}>
+      <DrawnPath
+        progress={progress}
+        window={[0, 0.22]}
+        d={gray.d}
+        length={gray.length}
+        color={theme.textSecondary}
+        opacity={0.4}
+      />
+      <DrawnPath
+        progress={progress}
+        window={MAIN}
+        d={main.d}
+        length={main.length}
+        color={theme.tint}
+        strokeWidth={2.5}
+      />
+      {reviews.slice(1).map((r, k) => (
+        <PopDot
+          key={r.day}
+          progress={progress}
+          at={peakAt(k)}
+          cx={xOf(r.day)}
+          cy={yScale(1)}
+          color={theme.tint}
+          surface={theme.background}
+        />
+      ))}
+    </Frame>
   );
 }
 
 /**
- * Slide 3: the testing effect (Roediger & Karpicke, 2006) — retention after a
- * week, restudying vs. retrieval practice. Two bars, direct value labels.
+ * Slide 3: the testing effect (Roediger & Karpicke, 2006): two columns grow
+ * from the baseline with a slight spring; values fade in above the caps.
  */
+function GrowBar({
+  progress,
+  window: win,
+  cx,
+  value,
+  color,
+  opacity = 1,
+}: {
+  progress: SharedValue<number>;
+  window: Window;
+  cx: number;
+  value: number;
+  color: string;
+  opacity?: number;
+}) {
+  const animatedProps = useAnimatedProps(() => {
+    const t = interpolate(progress.value, [win[0], win[1]], [0, 1], Extrapolation.CLAMP);
+    const k = Easing.out(Easing.back(1.5))(t);
+    const h = Math.max((yScale(0) - yScale(value)) * k, 0.001);
+    const top = yScale(0) - h;
+    const left = cx - BAR_W / 2;
+    const r = Math.min(4, h);
+    const d =
+      `M${left},${yScale(0)} L${left},${top + r} Q${left},${top} ${left + r},${top} ` +
+      `L${left + BAR_W - r},${top} Q${left + BAR_W},${top} ${left + BAR_W},${top + r} ` +
+      `L${left + BAR_W},${yScale(0)} Z`;
+    return { d };
+  });
+  return <AnimatedPath animatedProps={animatedProps} fill={color} opacity={opacity} />;
+}
+
 export function TestingEffectChart({
+  active,
+  width,
   rereadLabel,
   retrievalLabel,
 }: {
+  active: boolean;
+  width: number;
   rereadLabel: string;
   retrievalLabel: string;
 }) {
   const theme = useTheme();
+  const progress = useChartProgress(active, 1800);
+  const center = PAD.left + (width - PAD.left - PAD.right) / 2;
   const bars = [
-    { label: rereadLabel, value: 0.4, color: theme.textSecondary, opacity: 0.45 },
-    { label: retrievalLabel, value: 0.61, color: theme.tint, opacity: 1 },
+    {
+      cx: center - 57,
+      value: 0.4,
+      color: theme.textSecondary,
+      opacity: 0.4,
+      label: rereadLabel,
+      window: [0.05, 0.42] as const,
+    },
+    {
+      cx: center + 57,
+      value: 0.61,
+      color: theme.tint,
+      opacity: 1,
+      label: retrievalLabel,
+      window: [0.38, 0.85] as const,
+    },
   ];
-  const barWidth = 64;
-  const gap = 48;
-  const startX = PAD.left + (PLOT_W - (barWidth * 2 + gap)) / 2;
 
   return (
-    <View>
-      <Svg width={W} height={H}>
-        <Line
-          x1={PAD.left}
-          y1={y(0)}
-          x2={W - PAD.right}
-          y2={y(0)}
-          stroke={theme.backgroundSelected}
-          strokeWidth={1}
-        />
-        {bars.map((bar, i) => {
-          const bx = startX + i * (barWidth + gap);
-          const by = y(bar.value);
-          return (
-            <G key={bar.label}>
-              <Rect
-                x={bx}
-                y={by}
-                width={barWidth}
-                height={y(0) - by}
-                rx={4}
-                fill={bar.color}
-                opacity={bar.opacity}
-              />
-              <SvgText x={bx + barWidth / 2} y={by - 8} fontSize={12} fontWeight="bold" fill={theme.text} textAnchor="middle">
-                {Math.round(bar.value * 100)}%
-              </SvgText>
-              <SvgText x={bx + barWidth / 2} y={H - 6} fontSize={10} fill={theme.textSecondary} textAnchor="middle">
-                {bar.label}
-              </SvgText>
-            </G>
-          );
-        })}
-      </Svg>
+    <Frame width={width}>
+      {bars.map((bar) => (
+        <G key={bar.label}>
+          <GrowBar
+            progress={progress}
+            window={bar.window}
+            cx={bar.cx}
+            value={bar.value}
+            color={bar.color}
+            opacity={bar.opacity}
+          />
+          <FadeG progress={progress} at={bar.window[1]}>
+            <SvgText
+              x={bar.cx}
+              y={yScale(bar.value) - 10}
+              fontSize={13}
+              fontWeight="600"
+              fill={theme.text}
+              textAnchor="middle">
+              {Math.round(bar.value * 100)}%
+            </SvgText>
+          </FadeG>
+          <SvgText x={bar.cx} y={H - 8} fontSize={10.5} fill={theme.textSecondary} textAnchor="middle">
+            {bar.label}
+          </SvgText>
+        </G>
+      ))}
+    </Frame>
+  );
+}
+
+/** Static legend row shown under a chart with two or more series. */
+export function ChartLegend({
+  items,
+}: {
+  items: { color: string; label: string; muted?: boolean }[];
+}) {
+  return (
+    <View style={styles.legendRow}>
+      {items.map((item) => (
+        <View key={item.label} style={styles.legendItem}>
+          <View
+            style={[
+              styles.legendDot,
+              { backgroundColor: item.color, opacity: item.muted ? 0.4 : 1 },
+            ]}
+          />
+          <ThemedText type="small" themeColor="textSecondary">
+            {item.label}
+          </ThemedText>
+        </View>
+      ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.three,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+});

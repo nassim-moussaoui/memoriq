@@ -6,10 +6,16 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_RECITER_ID } from "@/lib/audio";
 
 export type Level = "beginner" | "intermediate" | "advanced";
+export type Goal = "juzamma" | "prayer" | "hifz";
+export type ReviewMoment = "morning" | "afterPrayer" | "evening";
 
 type AppState = {
   onboardingCompleted: boolean;
   level: Level;
+  /** Why the user memorizes (chosen during onboarding). */
+  goal: Goal;
+  /** Preferred moment of the day for reviewing (future notification anchor). */
+  reviewMoment: ReviewMoment;
   minutesPerDay: 5 | 10 | 20;
   /** Surah currently being learned (the "sabaq" source). */
   activeSurah: number;
@@ -19,7 +25,7 @@ type AppState = {
   showTransliteration: boolean;
   arabicFontScale: number;
 
-  /** Premium entitlement — wired to RevenueCat in a later phase. */
+  /** Premium entitlement, wired to RevenueCat in a later phase. */
   isPremium: boolean;
 
   streak: number;
@@ -30,7 +36,11 @@ type AppState = {
   lastPushedLogId: number;
   lastSyncAt: number | null;
 
-  completeOnboarding: (opts: { level: Level; minutesPerDay: 5 | 10 | 20; activeSurah: number }) => void;
+  completeOnboarding: (opts: {
+    minutesPerDay: 5 | 10 | 20;
+    goal: Goal;
+    reviewMoment: ReviewMoment;
+  }) => void;
   setActiveSurah: (surah: number) => void;
   setReciterId: (id: string) => void;
   setShowTranslation: (v: boolean) => void;
@@ -52,6 +62,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       onboardingCompleted: false,
       level: "beginner",
+      goal: "juzamma",
+      reviewMoment: "evening",
       minutesPerDay: 10,
       activeSurah: 114,
 
@@ -68,8 +80,8 @@ export const useAppStore = create<AppState>()(
       lastPushedLogId: 0,
       lastSyncAt: null,
 
-      completeOnboarding: ({ level, minutesPerDay, activeSurah }) =>
-        set({ onboardingCompleted: true, level, minutesPerDay, activeSurah }),
+      completeOnboarding: ({ minutesPerDay, goal, reviewMoment }) =>
+        set({ onboardingCompleted: true, minutesPerDay, goal, reviewMoment }),
       setActiveSurah: (activeSurah) => set({ activeSurah }),
       setReciterId: (reciterId) => set({ reciterId }),
       setShowTranslation: (showTranslation) => set({ showTranslation }),
@@ -96,7 +108,7 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-/** AsyncStorage rehydration is async — gate navigation decisions on this. */
+/** AsyncStorage rehydration is async: gate navigation decisions on this. */
 export function useStoreHydrated(): boolean {
   return useSyncExternalStore(
     (onChange) => useAppStore.persist.onFinishHydration(onChange),
