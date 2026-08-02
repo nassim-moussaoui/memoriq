@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AccountSection } from '@/components/account-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -91,9 +92,7 @@ export default function ProfileScreen() {
           </Pressable>
         </ThemedView>
 
-        <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
-          {t('profile.account')}
-        </ThemedText>
+        <AccountSection />
       </SafeAreaView>
     </ThemedView>
   );
@@ -125,5 +124,4 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.three,
   },
-  footer: { textAlign: 'center' },
 });

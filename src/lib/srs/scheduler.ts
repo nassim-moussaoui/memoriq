@@ -35,15 +35,24 @@ export function rate(card: Card, rating: Grade, now: Date = new Date()): Card {
 }
 
 /** Serialization helpers: FSRS cards contain Date fields. */
+export type SerializedCard = Omit<Card, "due" | "last_review"> & {
+  due: string | Date;
+  last_review?: string | Date | null;
+};
+
 export function serializeCard(card: Card): string {
   return JSON.stringify(card);
 }
 
-export function deserializeCard(json: string): Card {
-  const raw = JSON.parse(json);
+/** Revives a card parsed from JSON (SQLite text column or Postgres jsonb). */
+export function reviveCard(raw: SerializedCard): Card {
   return {
     ...raw,
     due: new Date(raw.due),
     last_review: raw.last_review ? new Date(raw.last_review) : undefined,
   };
+}
+
+export function deserializeCard(json: string): Card {
+  return reviveCard(JSON.parse(json));
 }

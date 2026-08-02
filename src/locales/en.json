@@ -107,7 +107,22 @@
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "The whole Quran, multiple reciters, advanced stats",
     "premiumCta": "Learn more",
-    "account": "Account & sync: coming soon"
+    "account": "Sync disabled — fill in .env.local (see .env.example)."
+  },
+  "auth": {
+    "title": "Account",
+    "subtitle": "Sync your progress across devices",
+    "email": "Email",
+    "password": "Password (6+ characters)",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signOut": "Sign out",
+    "confirmEmail": "Account created — confirm your address from the email we sent, then sign in.",
+    "sync": "Sync now",
+    "syncNever": "Never synced",
+    "syncedAt": "Last sync: {{time}}",
+    "syncDone": "Synced: {{items}} verses · {{logs}} reviews pushed",
+    "error": "Error: {{message}}"
   },
   "paywall": {
     "title": "Unlock the whole Quran",

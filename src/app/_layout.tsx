@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { syncNow } from '@/lib/sync';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,6 +17,8 @@ export default function RootLayout() {
   useEffect(() => {
     // Recitation must be audible even with the iOS mute switch on.
     setAudioModeAsync({ playsInSilentMode: true });
+    // Pull/push progress on launch when signed in; silent no-op otherwise.
+    syncNow().catch(() => {});
   }, []);
 
   return (

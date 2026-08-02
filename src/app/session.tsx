@@ -14,6 +14,7 @@ import { getItem, logReview, saveItem } from '@/lib/srs/db';
 import { buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
 import { newCard, rate, Rating, type Grade } from '@/lib/srs/scheduler';
 import { useAppStore } from '@/lib/store';
+import { syncNow } from '@/lib/sync';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -58,6 +59,10 @@ export default function SessionScreen() {
 
   const item = queue[index];
   const finished = index >= queue.length;
+
+  useEffect(() => {
+    if (finished) syncNow().catch(() => {});
+  }, [finished]);
 
   const advance = (nextQueue: SessionItem[]) => {
     stop();

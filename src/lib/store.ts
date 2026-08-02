@@ -26,6 +26,10 @@ type AppState = {
   /** Local date (YYYY-MM-DD) of the last completed session. */
   lastSessionDay: string | null;
 
+  /** Highest local review_logs id already pushed to Supabase. */
+  lastPushedLogId: number;
+  lastSyncAt: number | null;
+
   completeOnboarding: (opts: { level: Level; minutesPerDay: 5 | 10 | 20; activeSurah: number }) => void;
   setActiveSurah: (surah: number) => void;
   setReciterId: (id: string) => void;
@@ -33,6 +37,7 @@ type AppState = {
   setShowTransliteration: (v: boolean) => void;
   setArabicFontScale: (v: number) => void;
   registerSessionDone: () => void;
+  markSynced: (lastPushedLogId: number) => void;
 };
 
 function localDay(date = new Date()): string {
@@ -60,6 +65,9 @@ export const useAppStore = create<AppState>()(
       streak: 0,
       lastSessionDay: null,
 
+      lastPushedLogId: 0,
+      lastSyncAt: null,
+
       completeOnboarding: ({ level, minutesPerDay, activeSurah }) =>
         set({ onboardingCompleted: true, level, minutesPerDay, activeSurah }),
       setActiveSurah: (activeSurah) => set({ activeSurah }),
@@ -78,6 +86,8 @@ export const useAppStore = create<AppState>()(
           streak: lastSessionDay === yesterday ? streak + 1 : 1,
         });
       },
+
+      markSynced: (lastPushedLogId) => set({ lastPushedLogId, lastSyncAt: Date.now() }),
     }),
     {
       name: "memoriq-app",

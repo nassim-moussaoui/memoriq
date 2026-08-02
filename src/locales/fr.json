@@ -107,7 +107,22 @@
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "Tout le Coran, récitateurs multiples, statistiques avancées",
     "premiumCta": "Découvrir",
-    "account": "Compte et synchronisation : bientôt"
+    "account": "Synchronisation désactivée — renseigne .env.local (voir .env.example)."
+  },
+  "auth": {
+    "title": "Compte",
+    "subtitle": "Synchronise ta progression entre tes appareils",
+    "email": "Email",
+    "password": "Mot de passe (6 caractères min.)",
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "signOut": "Se déconnecter",
+    "confirmEmail": "Compte créé — confirme ton adresse depuis l'email reçu, puis connecte-toi.",
+    "sync": "Synchroniser",
+    "syncNever": "Jamais synchronisé",
+    "syncedAt": "Dernière sync : {{time}}",
+    "syncDone": "Sync OK : {{items}} versets · {{logs}} révisions envoyées",
+    "error": "Erreur : {{message}}"
   },
   "paywall": {
     "title": "Débloque tout le Coran",

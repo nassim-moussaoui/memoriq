@@ -143,6 +143,58 @@ export function getTotals(now: number = Date.now()): Totals {
   };
 }
 
+export function getAllItems(): ItemRow[] {
+  const rows = db.getAllSync<RawRow>("SELECT * FROM memorization_items");
+  return rows.map(toItem);
+}
+
+export type LogRow = {
+  id: number;
+  surah: number;
+  ayah: number;
+  rating: number;
+  reviewedAt: number;
+};
+
+/** Review logs with a local id greater than `afterId`, oldest first. */
+export function getLogsAfter(afterId: number, limit = 1000): LogRow[] {
+  const rows = db.getAllSync<{
+    id: number;
+    surah: number;
+    ayah: number;
+    rating: number;
+    reviewed_at: number;
+  }>(
+    "SELECT id, surah, ayah, rating, reviewed_at FROM review_logs WHERE id > ? ORDER BY id ASC LIMIT ?",
+    [afterId, limit]
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    surah: r.surah,
+    ayah: r.ayah,
+    rating: r.rating,
+    reviewedAt: r.reviewed_at,
+  }));
+}
+
+/**
+ * Merges a remote card into local state. The card with more reps wins (a
+ * later due date breaks ties) — reviews only ever add reps, so the higher
+ * count is the more recent history. Returns true when the remote card won.
+ */
+export function mergeRemoteItem(surah: number, ayah: number, remote: Card): boolean {
+  const local = getItem(surah, ayah);
+  if (local) {
+    const l = local.card;
+    const localWins =
+      l.reps > remote.reps ||
+      (l.reps === remote.reps && l.due.getTime() >= remote.due.getTime());
+    if (localWins) return false;
+  }
+  saveItem(surah, ayah, remote);
+  return true;
+}
+
 /** Daily review counts for the last `days` days (for the stats heatmap). */
 export function getDailyReviewCounts(days = 90, now: number = Date.now()): Map<string, number> {
   const since = now - days * 24 * 60 * 60 * 1000;
