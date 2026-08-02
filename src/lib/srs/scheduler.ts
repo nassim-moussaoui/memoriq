@@ -16,7 +16,7 @@ import {
 const engine = fsrs(
   generatorParameters({
     enable_fuzz: true,
-    // Target 90% recall probability — the FSRS default, well suited to
+    // Target 90% recall probability: the FSRS default, well suited to
     // verbatim memorization where accuracy matters.
     request_retention: 0.9,
   })
@@ -32,6 +32,21 @@ export function newCard(now: Date = new Date()): Card {
 /** Grade = Again | Hard | Good | Easy (Rating minus Manual). */
 export function rate(card: Card, rating: Grade, now: Date = new Date()): Card {
   return engine.next(card, now, rating).card;
+}
+
+/**
+ * Minutes until the next review for each possible grade (interval preview on
+ * the rating buttons).
+ */
+export function previewIntervals(card: Card, now: Date = new Date()): Record<Grade, number> {
+  const log = engine.repeat(card, now);
+  const minutes = (due: Date) => Math.max(1, Math.round((due.getTime() - now.getTime()) / 60000));
+  return {
+    [Rating.Again]: minutes(log[Rating.Again].card.due),
+    [Rating.Hard]: minutes(log[Rating.Hard].card.due),
+    [Rating.Good]: minutes(log[Rating.Good].card.due),
+    [Rating.Easy]: minutes(log[Rating.Easy].card.due),
+  };
 }
 
 /** Serialization helpers: FSRS cards contain Date fields. */

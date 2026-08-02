@@ -1,18 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MaskedVerse, type MaskLevel } from '@/components/masked-verse';
+import { BlurredArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getChapter, getVerses } from '@/lib/quran';
 import { getItem, logReview, saveItem } from '@/lib/srs/db';
 import { buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
-import { newCard, rate, Rating, type Grade } from '@/lib/srs/scheduler';
+import { newCard, previewIntervals, rate, Rating, type Grade } from '@/lib/srs/scheduler';
 import { useAppStore } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
@@ -40,7 +41,7 @@ export default function SessionScreen() {
   const [phase, setPhase] = useState<Phase>(() =>
     initialQueue[0]?.kind === 'new' ? 'listen' : 'recall'
   );
-  const [maskLevel, setMaskLevel] = useState<MaskLevel>(2);
+  const [revealedWords, setRevealedWords] = useState<ReadonlySet<number>>(new Set());
   const [revealed, setRevealed] = useState(false);
   const [loop, setLoop] = useState(true);
   const loopRef = useRef(true);
@@ -60,6 +61,14 @@ export default function SessionScreen() {
   const item = queue[index];
   const finished = index >= queue.length;
 
+  // Interval preview for the rating buttons. Memoized: FSRS fuzz would make
+  // the values jitter on every re-render otherwise.
+  const previews = useMemo(() => {
+    if (!item || !revealed) return null;
+    const card = getItem(item.surah, item.ayah)?.card ?? newCard();
+    return previewIntervals(card);
+  }, [item, revealed]);
+
   useEffect(() => {
     if (finished) syncNow().catch(() => {});
   }, [finished]);
@@ -69,7 +78,7 @@ export default function SessionScreen() {
     const nextIndex = index + 1;
     setIndex(nextIndex);
     setRevealed(false);
-    setMaskLevel(2);
+    setRevealedWords(new Set());
     const next = nextQueue[nextIndex];
     if (next) {
       setPhase(next.kind === 'new' ? 'listen' : 'recall');
@@ -100,6 +109,15 @@ export default function SessionScreen() {
   const toggleLoop = () => {
     loopRef.current = !loopRef.current;
     setLoop(loopRef.current);
+  };
+
+  const formatInterval = (mins: number) => {
+    if (mins < 60) return t('session.intMinutes', { count: mins });
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return t('session.intHours', { count: hours });
+    const days = Math.round(hours / 24);
+    if (days < 30) return t('session.intDays', { count: days });
+    return t('session.intMonths', { count: Math.round(days / 30) });
   };
 
   if (finished || !item) {
@@ -138,6 +156,15 @@ export default function SessionScreen() {
   const verse = getVerses(item.surah)[item.ayah - 1];
   const isPlaying = playing?.surah === item.surah && playing?.ayah === item.ayah;
   const progress = index / queue.length;
+
+  const revealWord = (wordIndex: number) => {
+    void Haptics.selectionAsync();
+    const next = new Set(revealedWords);
+    next.add(wordIndex);
+    setRevealedWords(next);
+    // Every word checked: show the full verse and move on to self-rating.
+    if (next.size >= splitWords(verse.tr).length) setRevealed(true);
+  };
 
   const title =
     item.kind === 'new'
@@ -196,11 +223,17 @@ export default function SessionScreen() {
           </ThemedText>
 
           <ThemedView type="backgroundElement" style={styles.verseCard}>
-            {phase === 'listen' || revealed ? (
-              <MaskedVerse text={verse.ar} level={0} fontScale={arabicFontScale} />
-            ) : (
-              <MaskedVerse text={verse.ar} level={maskLevel} fontScale={arabicFontScale} />
-            )}
+            <BlurredArabicVerse
+              text={verse.ar}
+              revealed={phase === 'listen' || revealed ? 'all' : revealedWords}
+              onReveal={phase === 'recall' && !revealed ? revealWord : undefined}
+              fontScale={arabicFontScale}
+            />
+            <PhoneticLine
+              text={verse.tr}
+              revealed={phase === 'listen' || revealed ? 'all' : revealedWords}
+              onReveal={phase === 'recall' && !revealed ? revealWord : undefined}
+            />
             {(phase === 'listen' || revealed) && showTranslation && (
               <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
                 {i18n.language === 'fr' ? verse.fr : verse.en}
@@ -240,36 +273,37 @@ export default function SessionScreen() {
               onPress={() => {
                 stop();
                 setPhase('recall');
-                setMaskLevel(2);
               }}>
               <ThemedText type="default" style={styles.primaryButtonText}>
                 {t('session.next')}
               </ThemedText>
             </Pressable>
           ) : !revealed ? (
-            <View style={styles.recallActions}>
-              {maskLevel === 2 && (
-                <Pressable
-                  style={[styles.secondaryButton, { backgroundColor: theme.backgroundElement }]}
-                  onPress={() => setMaskLevel(1)}>
-                  <Ionicons name="bulb-outline" size={16} color={theme.warning} />
-                  <ThemedText type="smallBold">{t('session.maskLess')}</ThemedText>
-                </Pressable>
-              )}
-              <Pressable
-                style={[styles.primaryButton, styles.grow, { backgroundColor: theme.tint }]}
-                onPress={() => setRevealed(true)}>
-                <ThemedText type="default" style={styles.primaryButtonText}>
-                  {t('session.reveal')}
-                </ThemedText>
-              </Pressable>
-            </View>
+            <Pressable
+              style={[styles.primaryButton, { backgroundColor: theme.tint }]}
+              onPress={() => setRevealed(true)}>
+              <ThemedText type="default" style={styles.primaryButtonText}>
+                {t('session.reveal')}
+              </ThemedText>
+            </Pressable>
           ) : (
             <View style={styles.ratingRow}>
-              <RatingButton color={theme.danger} label={t('session.again')} onPress={() => onRate(Rating.Again)} />
-              <RatingButton color={theme.warning} label={t('session.hard')} onPress={() => onRate(Rating.Hard)} />
-              <RatingButton color={theme.tint} label={t('session.good')} onPress={() => onRate(Rating.Good)} />
-              <RatingButton color={theme.info} label={t('session.easy')} onPress={() => onRate(Rating.Easy)} />
+              {(
+                [
+                  [Rating.Again, t('session.again'), theme.danger],
+                  [Rating.Hard, t('session.hard'), theme.warning],
+                  [Rating.Good, t('session.good'), theme.tint],
+                  [Rating.Easy, t('session.easy'), theme.info],
+                ] as const
+              ).map(([grade, label, color]) => (
+                <RatingButton
+                  key={label}
+                  color={color}
+                  label={label}
+                  interval={previews ? formatInterval(previews[grade]) : undefined}
+                  onPress={() => onRate(grade)}
+                />
+              ))}
             </View>
           )}
         </View>
@@ -281,20 +315,30 @@ export default function SessionScreen() {
 function RatingButton({
   color,
   label,
+  interval,
   onPress,
 }: {
   color: string;
   label: string;
+  interval?: string;
   onPress: () => void;
 }) {
-  const theme = useTheme();
   return (
     <Pressable
-      style={[styles.ratingButton, { backgroundColor: theme.backgroundElement, borderColor: color }]}
-      onPress={onPress}>
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.ratingButton,
+        { backgroundColor: color + '1F', transform: [{ scale: pressed ? 0.95 : 1 }] },
+      ]}>
       <ThemedText type="smallBold" style={{ color }}>
         {label}
       </ThemedText>
+      {interval ? (
+        <ThemedText style={[styles.ratingInterval, { color }]}>{interval}</ThemedText>
+      ) : null}
     </Pressable>
   );
 }
@@ -333,8 +377,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   footer: { paddingVertical: Spacing.three, gap: Spacing.two },
-  recallActions: { flexDirection: 'row', gap: Spacing.two, alignItems: 'stretch' },
-  grow: { flex: 1 },
   primaryButton: {
     borderRadius: Spacing.three,
     paddingVertical: Spacing.three,
@@ -342,22 +384,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonText: { color: '#ffffff', fontWeight: '700' },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-  },
   ratingRow: { flexDirection: 'row', gap: Spacing.two },
   ratingButton: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
     paddingVertical: Spacing.three,
     borderRadius: Spacing.three,
-    borderWidth: 1.5,
   },
+  ratingInterval: { fontSize: 11, lineHeight: 14, opacity: 0.75 },
   doneContainer: {
     justifyContent: 'center',
     alignItems: 'center',
