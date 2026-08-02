@@ -179,7 +179,7 @@ export function getLogsAfter(afterId: number, limit = 1000): LogRow[] {
 
 /**
  * Merges a remote card into local state. The card with more reps wins (a
- * later due date breaks ties) — reviews only ever add reps, so the higher
+ * later due date breaks ties): reviews only ever add reps, so the higher
  * count is the more recent history. Returns true when the remote card won.
  */
 export function mergeRemoteItem(surah: number, ayah: number, remote: Card): boolean {

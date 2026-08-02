@@ -51,7 +51,7 @@ export default function PaywallScreen() {
             <ThemedView type="backgroundElement" style={styles.plan}>
               <ThemedText type="smallBold">{t('paywall.monthly')}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                —
+                …
               </ThemedText>
             </ThemedView>
             <ThemedView
@@ -60,7 +60,7 @@ export default function PaywallScreen() {
                 {t('paywall.yearly')}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                —
+                …
               </ThemedText>
             </ThemedView>
           </View>

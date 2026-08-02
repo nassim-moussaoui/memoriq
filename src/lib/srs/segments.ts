@@ -1,6 +1,6 @@
 /**
  * Chunking: surahs are split into segments of 3–5 ayahs. A segment is the
- * unit of a "sabaq" (new lesson) — small enough for working memory, large
+ * unit of a "sabaq" (new lesson): small enough for working memory, large
  * enough to preserve the flow of the recitation.
  */
 export type Segment = {

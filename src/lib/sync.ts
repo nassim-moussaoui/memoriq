@@ -11,7 +11,7 @@ export type SyncResult = {
 
 /**
  * Two-way sync between device SQLite (source of truth) and Supabase.
- *  - pull: merge remote cards in (more reps wins — see mergeRemoteItem)
+ *  - pull: merge remote cards in (more reps wins, see mergeRemoteItem)
  *  - push: upsert every local item (idempotent), append new review logs
  *    (deduplicated server-side by (user_id, client_id))
  * No-op when Supabase is unconfigured or the user is signed out.
