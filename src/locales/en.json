@@ -146,6 +146,8 @@
     "reciter": "Reciter",
     "translation": "Show translation",
     "transliteration": "Show transliteration",
+    "reminders": "Daily reminder",
+    "reminderTime": "Reminder time",
     "method": "Our scientific method",
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "The whole Quran, multiple reciters, advanced stats",
@@ -174,7 +176,18 @@
     "back": "Back",
     "close": "Close",
     "playVerse": "Play the verse",
-    "pause": "Pause"
+    "pause": "Pause",
+    "earlier": "Earlier",
+    "later": "Later"
+  },
+  "notif": {
+    "title": "Time for your session",
+    "bodyDue_one": "{{count}} verse is waiting. A few minutes is enough.",
+    "bodyDue_other": "{{count}} verses are waiting. A few minutes is enough.",
+    "bodyFresh": "Keep your memorization fresh with a short session.",
+    "optIn": "Get a daily reminder at {{time}}",
+    "permissionTitle": "Notifications are off",
+    "permissionBody": "Allow notifications for Memoriq in your phone Settings to receive a reminder."
   },
   "paywall": {
     "title": "Unlock the whole Quran",

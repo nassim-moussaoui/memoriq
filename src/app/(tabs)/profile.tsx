@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { RECITERS, getReciter } from '@/lib/audio';
+import {
+  addMinutesToTime,
+  cancelReminders,
+  DEFAULT_REMINDER_TIMES,
+  requestReminderPermission,
+  scheduleDailyReminder,
+} from '@/lib/notifications';
 import { useAppStore } from '@/lib/store';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -27,6 +34,30 @@ export default function ProfileScreen() {
     }
     store.setReciterId(id);
     setReciterListOpen(false);
+  };
+
+  const reminderTime = store.reminderTime ?? DEFAULT_REMINDER_TIMES[store.reviewMoment];
+
+  const toggleReminders = async (enabled: boolean) => {
+    if (enabled) {
+      const granted = await requestReminderPermission();
+      if (!granted) {
+        Alert.alert(t('notif.permissionTitle'), t('notif.permissionBody'));
+        return;
+      }
+      store.setReminderTime(reminderTime);
+      store.setRemindersEnabled(true);
+      await scheduleDailyReminder(reminderTime);
+    } else {
+      store.setRemindersEnabled(false);
+      await cancelReminders();
+    }
+  };
+
+  const shiftReminderTime = async (deltaMinutes: number) => {
+    const next = addMinutesToTime(reminderTime, deltaMinutes);
+    store.setReminderTime(next);
+    if (store.remindersEnabled) await scheduleDailyReminder(next);
   };
 
   return (
@@ -123,6 +154,44 @@ export default function ProfileScreen() {
         </ThemedView>
 
         <ThemedView type="backgroundElement" style={styles.section}>
+          <View style={styles.row}>
+            <Ionicons name="notifications-outline" size={18} color={theme.text} />
+            <ThemedText type="default" style={{ flex: 1 }}>
+              {t('profile.reminders')}
+            </ThemedText>
+            <Switch
+              value={store.remindersEnabled}
+              onValueChange={(v) => void toggleReminders(v)}
+              trackColor={{ true: theme.tint }}
+            />
+          </View>
+          {store.remindersEnabled && (
+            <View style={styles.row}>
+              <ThemedText type="default" style={{ flex: 1 }}>
+                {t('profile.reminderTime')}
+              </ThemedText>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.earlier')}
+                onPress={() => void shiftReminderTime(-30)}>
+                <Ionicons name="remove-circle-outline" size={24} color={theme.tint} />
+              </Pressable>
+              <ThemedText type="smallBold" style={styles.timeValue}>
+                {reminderTime}
+              </ThemedText>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.later')}
+                onPress={() => void shiftReminderTime(30)}>
+                <Ionicons name="add-circle-outline" size={24} color={theme.tint} />
+              </Pressable>
+            </View>
+          )}
+        </ThemedView>
+
+        <ThemedView type="backgroundElement" style={styles.section}>
           <Pressable style={styles.row} onPress={() => router.push('/onboarding')}>
             <Ionicons name="school-outline" size={18} color={theme.text} />
             <ThemedText type="default" style={{ flex: 1 }}>
@@ -167,6 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   premiumPillText: { fontSize: 11, lineHeight: 14, fontWeight: 700 },
+  timeValue: { minWidth: 48, textAlign: 'center' },
   premiumCard: {
     flexDirection: 'row',
     alignItems: 'center',

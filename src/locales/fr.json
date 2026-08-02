@@ -146,6 +146,8 @@
     "reciter": "Récitateur",
     "translation": "Afficher la traduction",
     "transliteration": "Afficher la phonétique",
+    "reminders": "Rappel quotidien",
+    "reminderTime": "Heure du rappel",
     "method": "Notre méthode scientifique",
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "Tout le Coran, récitateurs multiples, statistiques avancées",
@@ -174,7 +176,18 @@
     "back": "Retour",
     "close": "Fermer",
     "playVerse": "Écouter le verset",
-    "pause": "Mettre en pause"
+    "pause": "Mettre en pause",
+    "earlier": "Plus tôt",
+    "later": "Plus tard"
+  },
+  "notif": {
+    "title": "C'est l'heure de ta session",
+    "bodyDue_one": "{{count}} verset t'attend. Quelques minutes suffisent.",
+    "bodyDue_other": "{{count}} versets t'attendent. Quelques minutes suffisent.",
+    "bodyFresh": "Entretiens ta mémorisation avec une courte session.",
+    "optIn": "Reçois un rappel quotidien à {{time}}",
+    "permissionTitle": "Notifications désactivées",
+    "permissionBody": "Autorise les notifications pour Memoriq dans les Réglages de ton téléphone pour recevoir un rappel."
   },
   "paywall": {
     "title": "Débloque tout le Coran",

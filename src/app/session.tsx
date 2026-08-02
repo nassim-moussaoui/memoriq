@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,6 +10,13 @@ import { BlurredArabicVerse, PhoneticLine, splitWords } from '@/components/recal
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import {
+  DEFAULT_REMINDER_TIMES,
+  refreshReminder,
+  requestReminderPermission,
+  scheduleDailyReminder,
+  syncAppBadge,
+} from '@/lib/notifications';
 import { getChapter, getVerses } from '@/lib/quran';
 import { getItem, logReview, saveItem } from '@/lib/srs/db';
 import { buildReviewAheadPlan, buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
@@ -28,6 +35,10 @@ export default function SessionScreen() {
   const arabicFontScale = useAppStore((s) => s.arabicFontScale);
   const showTranslation = useAppStore((s) => s.showTranslation);
   const registerSessionDone = useAppStore((s) => s.registerSessionDone);
+  const remindersEnabled = useAppStore((s) => s.remindersEnabled);
+  const setRemindersEnabled = useAppStore((s) => s.setRemindersEnabled);
+  const setReminderTime = useAppStore((s) => s.setReminderTime);
+  const reviewMoment = useAppStore((s) => s.reviewMoment);
 
   // "ahead" mode is the voluntary extra session offered when nothing is due.
   const { mode } = useLocalSearchParams<{ mode?: string }>();
@@ -73,8 +84,25 @@ export default function SessionScreen() {
   }, [item, revealed]);
 
   useEffect(() => {
-    if (finished) syncNow().catch(() => {});
+    if (finished) {
+      syncNow().catch(() => {});
+      // Tomorrow's reminder copy depends on what this session just changed.
+      refreshReminder().catch(() => {});
+      syncAppBadge().catch(() => {});
+    }
   }, [finished]);
+
+  const enableReminders = async () => {
+    const granted = await requestReminderPermission();
+    if (!granted) {
+      Alert.alert(t('notif.permissionTitle'), t('notif.permissionBody'));
+      return;
+    }
+    const time = DEFAULT_REMINDER_TIMES[reviewMoment];
+    setReminderTime(time);
+    setRemindersEnabled(true);
+    await scheduleDailyReminder(time);
+  };
 
   const advance = (nextQueue: SessionItem[]) => {
     stop();
@@ -143,6 +171,17 @@ export default function SessionScreen() {
               {t('session.doneScience')}
             </ThemedText>
           </ThemedView>
+          {!remindersEnabled && (
+            <Pressable
+              style={[styles.reminderCard, { backgroundColor: theme.tintSoft }]}
+              onPress={() => void enableReminders()}>
+              <Ionicons name="notifications-outline" size={18} color={theme.tint} />
+              <ThemedText type="smallBold" style={{ flex: 1, color: theme.tint }}>
+                {t('notif.optIn', { time: DEFAULT_REMINDER_TIMES[reviewMoment] })}
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={16} color={theme.tint} />
+            </Pressable>
+          )}
           <Pressable
             style={[styles.primaryButton, { backgroundColor: theme.tint }]}
             onPress={() => router.back()}>
@@ -414,5 +453,13 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     alignItems: 'flex-start',
+  },
+  reminderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    alignSelf: 'stretch',
   },
 });

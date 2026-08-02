@@ -14,8 +14,11 @@ type AppState = {
   level: Level;
   /** Why the user memorizes (chosen during onboarding). */
   goal: Goal;
-  /** Preferred moment of the day for reviewing (future notification anchor). */
+  /** Preferred moment of the day for reviewing (anchor of the daily reminder). */
   reviewMoment: ReviewMoment;
+  /** Daily reminder notification. `reminderTime` is "HH:MM" (24h). */
+  remindersEnabled: boolean;
+  reminderTime: string | null;
   minutesPerDay: 5 | 10 | 20;
   /** Surah currently being learned (the "sabaq" source). */
   activeSurah: number;
@@ -42,6 +45,8 @@ type AppState = {
     reviewMoment: ReviewMoment;
   }) => void;
   setActiveSurah: (surah: number) => void;
+  setRemindersEnabled: (v: boolean) => void;
+  setReminderTime: (time: string) => void;
   setReciterId: (id: string) => void;
   setShowTranslation: (v: boolean) => void;
   setShowTransliteration: (v: boolean) => void;
@@ -64,6 +69,8 @@ export const useAppStore = create<AppState>()(
       level: "beginner",
       goal: "juzamma",
       reviewMoment: "evening",
+      remindersEnabled: false,
+      reminderTime: null,
       minutesPerDay: 10,
       activeSurah: 114,
 
@@ -83,6 +90,8 @@ export const useAppStore = create<AppState>()(
       completeOnboarding: ({ minutesPerDay, goal, reviewMoment }) =>
         set({ onboardingCompleted: true, minutesPerDay, goal, reviewMoment }),
       setActiveSurah: (activeSurah) => set({ activeSurah }),
+      setRemindersEnabled: (remindersEnabled) => set({ remindersEnabled }),
+      setReminderTime: (reminderTime) => set({ reminderTime }),
       setReciterId: (reciterId) => set({ reciterId }),
       setShowTranslation: (showTranslation) => set({ showTranslation }),
       setShowTransliteration: (showTransliteration) => set({ showTransliteration }),
@@ -104,6 +113,10 @@ export const useAppStore = create<AppState>()(
     {
       name: "memoriq-app",
       storage: createJSONStorage(() => AsyncStorage),
+      // v1 added goal/reviewMoment/reminders; missing keys fall back to the
+      // defaults above, so migration is a pass-through.
+      version: 1,
+      migrate: (persisted) => persisted as AppState,
     }
   )
 );
