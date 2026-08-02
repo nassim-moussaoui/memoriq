@@ -9,28 +9,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getChapter } from '@/lib/quran';
-import { getNextDueAt } from '@/lib/srs/db';
+import { describeNextDue, nextDueKey, type NextDue } from '@/lib/next-due';
+import { getDailyReviewCounts, getNextDueAt } from '@/lib/srs/db';
 import { buildSessionPlan, estimateMinutes, type SessionPlan } from '@/lib/srs/queue';
 import { useAppStore } from '@/lib/store';
 import { useTheme } from '@/hooks/use-theme';
-
-type NextDue = { kind: 'today' | 'tomorrow' | 'date'; value: string };
-
-/** Human description of the next scheduled review (called from effects only). */
-function describeNextDue(ts: number, locale: string): NextDue {
-  const due = new Date(ts);
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const dayDiff = Math.floor((ts - startOfToday.getTime()) / 86_400_000);
-  if (dayDiff <= 1) {
-    const time = due.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-    return { kind: dayDiff <= 0 ? 'today' : 'tomorrow', value: time };
-  }
-  return {
-    kind: 'date',
-    value: due.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' }),
-  };
-}
 
 export default function TodayScreen() {
   const { t, i18n } = useTranslation();
@@ -41,6 +24,7 @@ export default function TodayScreen() {
   const reviewMoment = useAppStore((s) => s.reviewMoment);
   const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [nextDue, setNextDue] = useState<NextDue | null>(null);
+  const [week, setWeek] = useState<{ key: string; label: string; active: boolean }[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,6 +36,23 @@ export default function TodayScreen() {
       } else {
         setNextDue(null);
       }
+
+      // Last 7 days of activity, oldest first, today last.
+      const counts = getDailyReviewCounts(7);
+      const days: { key: string; label: string; active: boolean }[] = [];
+      for (let offset = 6; offset >= 0; offset--) {
+        const day = new Date();
+        day.setDate(day.getDate() - offset);
+        const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
+          day.getDate()
+        ).padStart(2, '0')}`;
+        days.push({
+          key,
+          label: day.toLocaleDateString(i18n.language, { weekday: 'narrow' }),
+          active: (counts.get(key) ?? 0) > 0,
+        });
+      }
+      setWeek(days);
     }, [activeSurah, minutesPerDay, i18n.language])
   );
 
@@ -156,11 +157,7 @@ export default function TodayScreen() {
             </View>
             {nextDue && (
               <ThemedText type="small" themeColor="textSecondary">
-                {nextDue.kind === 'today'
-                  ? t('today.nextDueToday', { time: nextDue.value })
-                  : nextDue.kind === 'tomorrow'
-                    ? t('today.nextDueTomorrow', { time: nextDue.value })
-                    : t('today.nextDueOn', { date: nextDue.value })}
+                {t(nextDueKey(nextDue.kind), { time: nextDue.value, date: nextDue.value })}
               </ThemedText>
             )}
             <View style={styles.doneActions}>
@@ -188,6 +185,30 @@ export default function TodayScreen() {
             </Pressable>
           </ThemedView>
         )}
+
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('today.thisWeek')}
+          </ThemedText>
+          <View style={styles.weekRow}>
+            {week.map((day, i) => (
+              <View key={day.key} style={styles.weekDay}>
+                <View
+                  style={[
+                    styles.weekDot,
+                    {
+                      backgroundColor: day.active ? theme.tint : theme.backgroundSelected,
+                      borderColor: i === week.length - 1 ? theme.tint : 'transparent',
+                    },
+                  ]}
+                />
+                <ThemedText style={[styles.weekLabel, { color: theme.textSecondary }]}>
+                  {day.label}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        </ThemedView>
 
         <View style={styles.tipRow}>
           <Ionicons
@@ -258,6 +279,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: { color: '#ffffff', fontWeight: '700' },
+  weekRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  weekDay: { alignItems: 'center', gap: Spacing.one },
+  weekDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5 },
+  weekLabel: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase' },
   doneHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   doneActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   softButton: {

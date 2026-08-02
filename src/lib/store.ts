@@ -40,6 +40,8 @@ type AppState = {
   activeSurah: number;
 
   reciterId: string;
+  /** Recitation speed; slowing down is a classic hifz technique. */
+  playbackRate: 0.75 | 1 | 1.25;
   showTranslation: boolean;
   showTransliteration: boolean;
   arabicFontScale: number;
@@ -64,6 +66,7 @@ type AppState = {
   setRemindersEnabled: (v: boolean) => void;
   setReminderTime: (time: string) => void;
   setReciterId: (id: string) => void;
+  setPlaybackRate: (rate: 0.75 | 1 | 1.25) => void;
   setShowTranslation: (v: boolean) => void;
   setShowTransliteration: (v: boolean) => void;
   setArabicFontScale: (v: number) => void;
@@ -91,6 +94,7 @@ export const useAppStore = create<AppState>()(
       activeSurah: 114,
 
       reciterId: DEFAULT_RECITER_ID,
+      playbackRate: 1,
       showTranslation: true,
       showTransliteration: false,
       arabicFontScale: 1,
@@ -119,6 +123,7 @@ export const useAppStore = create<AppState>()(
       setRemindersEnabled: (remindersEnabled) => set({ remindersEnabled }),
       setReminderTime: (reminderTime) => set({ reminderTime }),
       setReciterId: (reciterId) => set({ reciterId }),
+      setPlaybackRate: (playbackRate) => set({ playbackRate }),
       setShowTranslation: (showTranslation) => set({ showTranslation }),
       setShowTransliteration: (showTransliteration) => set({ showTransliteration }),
       setArabicFontScale: (arabicFontScale) => set({ arabicFontScale }),

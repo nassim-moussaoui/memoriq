@@ -6,7 +6,9 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Celebration } from '@/components/celebration';
 import { BlurredArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
+import { SpeedPill } from '@/components/speed-pill';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -17,8 +19,9 @@ import {
   scheduleDailyReminder,
   syncAppBadge,
 } from '@/lib/notifications';
+import { describeNextDue, nextDueKey } from '@/lib/next-due';
 import { getChapter, getVerses } from '@/lib/quran';
-import { getItem, logReview, saveItem } from '@/lib/srs/db';
+import { countDue, getItem, getNextDueAt, logReview, saveItem } from '@/lib/srs/db';
 import { buildReviewAheadPlan, buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
 import { newCard, previewIntervals, rate, Rating, type Grade } from '@/lib/srs/scheduler';
 import { useAppStore } from '@/lib/store';
@@ -35,6 +38,7 @@ export default function SessionScreen() {
   const arabicFontScale = useAppStore((s) => s.arabicFontScale);
   const showTranslation = useAppStore((s) => s.showTranslation);
   const registerSessionDone = useAppStore((s) => s.registerSessionDone);
+  const streak = useAppStore((s) => s.streak);
   const minutesPerDay = useAppStore((s) => s.minutesPerDay);
   const remindersEnabled = useAppStore((s) => s.remindersEnabled);
   const setRemindersEnabled = useAppStore((s) => s.setRemindersEnabled);
@@ -76,6 +80,17 @@ export default function SessionScreen() {
 
   const item = queue[index];
   const finished = index >= queue.length;
+
+  // Snapshot of what is left once the session ends: read once, after
+  // registerSessionDone has already run.
+  const doneStats = useMemo(() => {
+    if (!finished) return null;
+    const nextAt = getNextDueAt();
+    return {
+      remainingDue: countDue(),
+      nextDue: nextAt ? describeNextDue(nextAt, i18n.language) : null,
+    };
+  }, [finished, i18n.language]);
 
   // Interval preview for the rating buttons. Memoized: FSRS fuzz would make
   // the values jitter on every re-render otherwise.
@@ -157,16 +172,43 @@ export default function SessionScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={[styles.safeArea, styles.doneContainer]}>
-          <Ionicons name="checkmark-circle" size={64} color={theme.tint} />
+          <Celebration />
           <ThemedText type="subtitle" style={styles.center}>
             {t('session.done')}
           </ThemedText>
+          {streak > 0 && (
+            <View style={[styles.streakChip, { backgroundColor: theme.tintSoft }]}>
+              <Ionicons name="flame" size={16} color={theme.tint} />
+              <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                {t('session.streakDay', { count: streak })}
+              </ThemedText>
+            </View>
+          )}
           <ThemedText type="default" themeColor="textSecondary" style={styles.center}>
             {t('session.doneSummary', {
               new: doneCounts.new,
               reviews: doneCounts.reviews,
             })}
           </ThemedText>
+          {doneStats?.nextDue && (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+              {t(nextDueKey(doneStats.nextDue.kind), {
+                time: doneStats.nextDue.value,
+                date: doneStats.nextDue.value,
+              })}
+            </ThemedText>
+          )}
+          {doneStats && doneStats.remainingDue > 0 && (
+            <Pressable
+              style={[styles.reminderCard, { backgroundColor: theme.backgroundElement }]}
+              onPress={() => router.replace('/session')}>
+              <Ionicons name="refresh-outline" size={18} color={theme.info} />
+              <ThemedText type="smallBold" style={{ flex: 1 }}>
+                {t('session.moreWaiting', { count: doneStats.remainingDue })}
+              </ThemedText>
+              <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+            </Pressable>
+          )}
           <ThemedView type="backgroundElement" style={styles.scienceCard}>
             <Ionicons name="school-outline" size={18} color={theme.tint} />
             <ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>
@@ -310,6 +352,7 @@ export default function SessionScreen() {
                   </ThemedText>
                 </Pressable>
               )}
+              <SpeedPill />
             </View>
           )}
         </ScrollView>
@@ -463,5 +506,13 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     alignSelf: 'stretch',
+  },
+  streakChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 999,
   },
 });

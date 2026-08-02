@@ -25,6 +25,7 @@
     "reviewAhead": "Review ahead",
     "explore": "Explore the surahs",
     "activeSurah": "Current surah",
+    "thisWeek": "This week",
     "segmentPreview": "New: {{surah}}, verses {{from}} to {{to}}",
     "moreDue_one": "{{count}} more review will wait for your next session",
     "moreDue_other": "{{count}} more reviews will wait for your next session",
@@ -70,6 +71,10 @@
     "intMonths": "{{count}} mo",
     "next": "Continue",
     "done": "Session complete!",
+    "streakDay_one": "{{count}} day in a row",
+    "streakDay_other": "{{count}} days in a row",
+    "moreWaiting_one": "{{count}} review is still waiting, keep going?",
+    "moreWaiting_other": "{{count}} reviews are still waiting, keep going?",
     "doneSummary": "{{new}} new verses · {{reviews}} reviews",
     "doneScience": "Your brain will now start forgetting… that's normal and planned: Memoriq will bring each verse back right before you forget it. That's spaced repetition.",
     "backHome": "Back to home",
@@ -185,7 +190,8 @@
     "playVerse": "Play the verse",
     "pause": "Pause",
     "earlier": "Earlier",
-    "later": "Later"
+    "later": "Later",
+    "speed": "Recitation speed"
   },
   "notif": {
     "title": "Time for your session",

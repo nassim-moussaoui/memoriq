@@ -15,6 +15,7 @@ export function useAyahAudio(onFinished?: (played: PlayingAyah) => void) {
   const player = useAudioPlayer();
   const status = useAudioPlayerStatus(player);
   const reciterId = useAppStore((s) => s.reciterId);
+  const playbackRate = useAppStore((s) => s.playbackRate);
   const [playing, setPlaying] = useState<PlayingAyah | null>(null);
   const playingRef = useRef<PlayingAyah | null>(null);
   const onFinishedRef = useRef(onFinished);
@@ -37,6 +38,8 @@ export function useAyahAudio(onFinished?: (played: PlayingAyah) => void) {
     playingRef.current = { surah, ayah };
     setPlaying({ surah, ayah });
     player.replace({ uri: ayahAudioUrl(reciter, surah, ayah) });
+    // Pitch correction keeps a slowed recitation faithful to the tajwid.
+    player.setPlaybackRate(playbackRate, "high");
     player.play();
   };
 
@@ -44,6 +47,7 @@ export function useAyahAudio(onFinished?: (played: PlayingAyah) => void) {
     playingRef.current = null;
     setPlaying(null);
     player.pause();
+    player.seekTo(0);
   };
 
   return { play, stop, playing };

@@ -25,6 +25,7 @@
     "reviewAhead": "Réviser en avance",
     "explore": "Explorer les sourates",
     "activeSurah": "Sourate en cours",
+    "thisWeek": "Cette semaine",
     "segmentPreview": "Nouveau : {{surah}}, versets {{from}} à {{to}}",
     "moreDue_one": "{{count}} révision de plus attendra la prochaine session",
     "moreDue_other": "{{count}} révisions de plus attendront la prochaine session",
@@ -70,6 +71,10 @@
     "intMonths": "{{count}} mois",
     "next": "Continuer",
     "done": "Session terminée !",
+    "streakDay_one": "{{count}} jour d'affilée",
+    "streakDay_other": "{{count}} jours d'affilée",
+    "moreWaiting_one": "{{count}} révision t'attend encore, on enchaîne ?",
+    "moreWaiting_other": "{{count}} révisions t'attendent encore, on enchaîne ?",
     "doneSummary": "{{new}} nouveaux versets · {{reviews}} révisions",
     "doneScience": "Ton cerveau va maintenant oublier… c'est normal et c'est prévu : Memoriq te fera réviser chaque verset juste avant que tu ne l'oublies. C'est ça, la répétition espacée.",
     "backHome": "Retour à l'accueil",
@@ -185,7 +190,8 @@
     "playVerse": "Écouter le verset",
     "pause": "Mettre en pause",
     "earlier": "Plus tôt",
-    "later": "Plus tard"
+    "later": "Plus tard",
+    "speed": "Vitesse de récitation"
   },
   "notif": {
     "title": "C'est l'heure de ta session",
