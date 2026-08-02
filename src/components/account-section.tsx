@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
@@ -22,7 +22,7 @@ export function AccountSection() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ kind: 'info' | 'error'; text: string } | null>(null);
 
   if (!supabase) {
     return (
@@ -37,9 +37,13 @@ export function AccountSection() {
     setBusy(true);
     setMessage(null);
     try {
-      setMessage(await action());
+      const text = await action();
+      setMessage(text ? { kind: 'info', text } : null);
     } catch (e) {
-      setMessage(t('auth.error', { message: e instanceof Error ? e.message : String(e) }));
+      setMessage({
+        kind: 'error',
+        text: t('auth.error', { message: e instanceof Error ? e.message : String(e) }),
+      });
     } finally {
       setBusy(false);
     }
@@ -68,6 +72,13 @@ export function AccountSection() {
       if (error) throw error;
       return null;
     });
+
+  const confirmSignOut = () => {
+    Alert.alert(t('auth.signOutConfirmTitle'), t('auth.signOutConfirmBody'), [
+      { text: t('auth.cancel'), style: 'cancel' },
+      { text: t('auth.signOut'), style: 'destructive', onPress: () => void signOut() },
+    ]);
+  };
 
   const sync = () =>
     run(async () => {
@@ -118,7 +129,7 @@ export function AccountSection() {
             <Pressable
               style={[styles.button, { backgroundColor: theme.backgroundSelected }]}
               disabled={busy}
-              onPress={signOut}>
+              onPress={confirmSignOut}>
               <ThemedText type="smallBold">{t('auth.signOut')}</ThemedText>
             </Pressable>
           </View>
@@ -168,9 +179,21 @@ export function AccountSection() {
       )}
 
       {message && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {message}
-        </ThemedText>
+        <View style={styles.messageRow}>
+          <Ionicons
+            name={message.kind === 'error' ? 'alert-circle' : 'checkmark-circle'}
+            size={16}
+            color={message.kind === 'error' ? theme.danger : theme.tint}
+          />
+          <ThemedText
+            type="small"
+            style={[
+              { flex: 1 },
+              message.kind === 'error' ? { color: theme.danger } : { color: theme.textSecondary },
+            ]}>
+            {message.text}
+          </ThemedText>
+        </View>
       )}
     </ThemedView>
   );
@@ -198,5 +221,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: { color: '#ffffff' },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
   note: { textAlign: 'center' },
 });

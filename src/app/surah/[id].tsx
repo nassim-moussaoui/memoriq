@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { getChapter, getVerses, isFreeSurah, type Verse } from '@/lib/quran';
+import { getDueItems } from '@/lib/srs/db';
 import { nextSegment } from '@/lib/srs/queue';
 import { useAppStore } from '@/lib/store';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
@@ -31,9 +32,6 @@ export default function SurahScreen() {
   const playAllRef = useRef(false);
   const listRef = useRef<FlatList<Verse>>(null);
 
-  const chapter = getChapter(surahId);
-  const verses = getVerses(surahId);
-
   const onAyahFinishedRef = useRef<(played: PlayingAyah) => void>(() => {});
   const { play, stop, playing } = useAyahAudio((played) => onAyahFinishedRef.current(played));
 
@@ -41,7 +39,7 @@ export default function SurahScreen() {
     onAyahFinishedRef.current = (played) => {
       if (!playAllRef.current) return;
       const nextAyah = played.ayah + 1;
-      if (nextAyah <= chapter.versesCount) {
+      if (nextAyah <= getChapter(played.surah).versesCount) {
         play(surahId, nextAyah);
         listRef.current?.scrollToIndex({ index: nextAyah - 1, viewPosition: 0.3 });
       } else if (loopRef.current) {
@@ -54,9 +52,17 @@ export default function SurahScreen() {
     };
   });
 
+  // Guards before touching the dataset: a malformed id redirects to the
+  // library, and locked surahs never load their verses into memory.
+  if (!Number.isInteger(surahId) || surahId < 1 || surahId > 114) {
+    return <Redirect href="/library" />;
+  }
   if (!isFreeSurah(surahId) && !isPremium) {
     return <Redirect href="/paywall" />;
   }
+
+  const chapter = getChapter(surahId);
+  const verses = getVerses(surahId);
 
   const startPlayAll = () => {
     playAllRef.current = true;
@@ -82,6 +88,7 @@ export default function SurahScreen() {
   };
 
   const hasNextSegment = nextSegment(surahId) !== null;
+  const hasDueHere = !hasNextSegment && getDueItems().some((item) => item.surah === surahId);
 
   const renderVerse = ({ item }: { item: Verse }) => {
     const isPlaying = playing?.ayah === item.v && playing?.surah === surahId;
@@ -93,6 +100,8 @@ export default function SurahScreen() {
           </View>
           <Pressable
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isPlaying ? t('a11y.pause') : t('a11y.playVerse')}
             onPress={() => {
               if (isPlaying) {
                 stopAll();
@@ -134,7 +143,11 @@ export default function SurahScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Pressable onPress={() => { stopAll(); router.back(); }} hitSlop={8}>
+          <Pressable
+            onPress={() => { stopAll(); router.back(); }}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={26} color={theme.text} />
           </Pressable>
           <View style={styles.headerCenter}>
@@ -176,14 +189,36 @@ export default function SurahScreen() {
           renderItem={renderVerse}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          onScrollToIndexFailed={() => {}}
+          onScrollToIndexFailed={({ index, averageItemLength }) => {
+            listRef.current?.scrollToOffset({
+              offset: averageItemLength * index,
+              animated: true,
+            });
+          }}
         />
 
-        <Pressable style={[styles.learnButton, { backgroundColor: theme.tint }]} onPress={startLearning}>
-          <ThemedText type="default" style={styles.learnText}>
-            {hasNextSegment ? t('surah.learn') : t('surah.completed')}
-          </ThemedText>
-        </Pressable>
+        {hasNextSegment ? (
+          <Pressable
+            style={[styles.learnButton, { backgroundColor: theme.tint }]}
+            onPress={startLearning}>
+            <ThemedText type="default" style={styles.learnText}>
+              {t('surah.learn')}
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View style={styles.completedFooter}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.completedText}>
+              {t('surah.completed')}
+            </ThemedText>
+            <Pressable
+              style={[styles.learnButton, { backgroundColor: theme.tint }]}
+              onPress={hasDueHere ? startLearning : () => router.push('/library')}>
+              <ThemedText type="default" style={styles.learnText}>
+                {hasDueHere ? t('surah.reviewDue') : t('surah.pickNext')}
+              </ThemedText>
+            </Pressable>
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -232,4 +267,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   learnText: { color: '#ffffff', fontWeight: '700' },
+  completedFooter: { gap: Spacing.two, paddingTop: Spacing.one },
+  completedText: { textAlign: 'center' },
 });

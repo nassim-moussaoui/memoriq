@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getChapter, getVerses } from '@/lib/quran';
 import { getItem, logReview, saveItem } from '@/lib/srs/db';
-import { buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
+import { buildReviewAheadPlan, buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
 import { newCard, previewIntervals, rate, Rating, type Grade } from '@/lib/srs/scheduler';
 import { useAppStore } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
@@ -29,12 +29,15 @@ export default function SessionScreen() {
   const showTranslation = useAppStore((s) => s.showTranslation);
   const registerSessionDone = useAppStore((s) => s.registerSessionDone);
 
+  // "ahead" mode is the voluntary extra session offered when nothing is due.
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+
   // The queue is frozen at mount; "Again" ratings re-append the item so it is
   // retried before the session ends (in-session relearning).
   const initialQueue = useMemo(() => {
-    const plan = buildSessionPlan(activeSurah);
+    const plan = mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah);
     return [...plan.newItems, ...plan.reviewItems];
-  }, [activeSurah]);
+  }, [activeSurah, mode]);
 
   const [queue, setQueue] = useState<SessionItem[]>(initialQueue);
   const [index, setIndex] = useState(0);
@@ -183,7 +186,11 @@ export default function SessionScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => { stop(); router.back(); }} hitSlop={8}>
+          <Pressable
+            onPress={() => { stop(); router.back(); }}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.close')}>
             <Ionicons name="close" size={26} color={theme.text} />
           </Pressable>
           <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>

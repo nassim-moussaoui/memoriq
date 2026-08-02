@@ -17,7 +17,13 @@
     "estimated": "≈ {{minutes}} min",
     "start": "Commencer la session",
     "allDone": "Tout est à jour pour aujourd'hui 🎉",
-    "allDoneHint": "Reviens ce soir : réviser avant de dormir aide ton cerveau à consolider pendant la nuit.",
+    "streakStart": "Commence ta série aujourd'hui",
+    "nextDueToday": "Prochaines révisions aujourd'hui vers {{time}}",
+    "nextDueTomorrow": "Prochaines révisions demain vers {{time}}",
+    "nextDueOn": "Prochaines révisions {{date}}",
+    "readSurah": "Lire la sourate",
+    "reviewAhead": "Réviser en avance",
+    "explore": "Explorer les sourates",
     "activeSurah": "Sourate en cours",
     "eveningTip": "Astuce : une courte révision juste avant de dormir améliore la consolidation (science du sommeil).",
     "changeSurah": "Changer"
@@ -32,7 +38,8 @@
   },
   "surah": {
     "learn": "Apprendre cette sourate",
-    "continue": "Continuer l'apprentissage",
+    "reviewDue": "Réviser les versets dus",
+    "pickNext": "Choisir la prochaine sourate",
     "listen": "Écouter",
     "stop": "Arrêter",
     "loop": "Boucle",
@@ -67,6 +74,7 @@
     "skip": "Passer",
     "next": "Suivant",
     "start": "Commencer",
+    "save": "Enregistrer mon plan",
     "slide1Title": "Sans révision,\non oublie presque tout",
     "slide1Body": "Dès 1885, Hermann Ebbinghaus a mesuré la « courbe de l'oubli » : en quelques jours, la majorité de ce qu'on vient d'apprendre s'efface.",
     "slide1Caption": "Mémoire conservée sans révision",
@@ -142,7 +150,7 @@
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "Tout le Coran, récitateurs multiples, statistiques avancées",
     "premiumCta": "Découvrir",
-    "account": "Synchronisation désactivée : renseigne .env.local (voir .env.example)."
+    "account": "Synchronisation indisponible dans cette version."
   },
   "auth": {
     "title": "Compte",
@@ -152,6 +160,9 @@
     "signIn": "Se connecter",
     "signUp": "Créer un compte",
     "signOut": "Se déconnecter",
+    "signOutConfirmTitle": "Se déconnecter ?",
+    "signOutConfirmBody": "Ta progression reste enregistrée sur cet appareil et dans le cloud. Tu pourras te reconnecter à tout moment.",
+    "cancel": "Annuler",
     "confirmEmail": "Compte créé : confirme ton adresse depuis l'email reçu, puis connecte-toi.",
     "sync": "Synchroniser",
     "syncNever": "Jamais synchronisé",
@@ -159,17 +170,22 @@
     "syncDone": "Sync OK : {{items}} versets · {{logs}} révisions envoyées",
     "error": "Erreur : {{message}}"
   },
+  "a11y": {
+    "back": "Retour",
+    "close": "Fermer",
+    "playVerse": "Écouter le verset",
+    "pause": "Mettre en pause"
+  },
   "paywall": {
     "title": "Débloque tout le Coran",
     "subtitle": "Le Juz' 'Amma et Al-Fatiha sont gratuits pour toujours. Premium débloque les 114 sourates et toutes les fonctionnalités.",
     "feature1": "Les 114 sourates, hors ligne",
     "feature2": "Tous les récitateurs",
     "feature3": "Statistiques avancées",
-    "monthly": "Mensuel",
-    "yearly": "Annuel",
+    "comingSoonTitle": "Premium arrive bientôt",
+    "comingSoonBody": "En attendant, Al-Fatiha et tout le Juz' 'Amma restent gratuits, pour toujours.",
     "sadaqaTitle": "Premium + Sadaqa",
     "sadaqaBody": "Paie un peu plus et offre un abonnement Memoriq Premium à un étudiant qui n'en a pas les moyens, quelque part dans le monde.",
-    "comingSoon": "Les achats arrivent bientôt : l'app est en développement.",
     "close": "Fermer"
   }
 }

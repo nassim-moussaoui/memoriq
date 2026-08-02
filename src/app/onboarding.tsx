@@ -433,10 +433,19 @@ export default function OnboardingScreen() {
 
   const alreadyCompleted = useAppStore((s) => s.onboardingCompleted);
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
+  const storedGoal = useAppStore((s) => s.goal);
+  const storedMinutes = useAppStore((s) => s.minutesPerDay);
+  const storedMoment = useAppStore((s) => s.reviewMoment);
 
-  const [goal, setGoal] = useState<Goal>('juzamma');
-  const [minutesPerDay, setMinutesPerDay] = useState<5 | 10 | 20>(10);
-  const [reviewMoment, setReviewMoment] = useState<ReviewMoment>('evening');
+  // When revisiting from the Profile, start from the saved plan so walking
+  // through the slides never silently resets it.
+  const [goal, setGoal] = useState<Goal>(alreadyCompleted ? storedGoal : 'juzamma');
+  const [minutesPerDay, setMinutesPerDay] = useState<5 | 10 | 20>(
+    alreadyCompleted ? storedMinutes : 10,
+  );
+  const [reviewMoment, setReviewMoment] = useState<ReviewMoment>(
+    alreadyCompleted ? storedMoment : 'evening',
+  );
 
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollX.value = e.contentOffset.x;
@@ -460,7 +469,8 @@ export default function OnboardingScreen() {
 
   const finish = () => {
     completeOnboarding({ minutesPerDay, goal, reviewMoment });
-    router.replace('/');
+    if (alreadyCompleted) router.back();
+    else router.replace('/');
   };
 
   const skip = () => {
@@ -603,7 +613,11 @@ export default function OnboardingScreen() {
             { backgroundColor: theme.tint, transform: [{ scale: pressed ? 0.97 : 1 }] },
           ]}>
           <ThemedText type="default" style={styles.primaryButtonText}>
-            {isLast ? t('onboarding.start') : t('onboarding.next')}
+            {isLast
+              ? alreadyCompleted
+                ? t('onboarding.save')
+                : t('onboarding.start')
+              : t('onboarding.next')}
           </ThemedText>
           <Ionicons name="arrow-forward" size={18} color="#ffffff" />
         </Pressable>

@@ -1,6 +1,6 @@
 import { getChapter } from "@/lib/quran";
 
-import { getDueItems, getStartedAyahs } from "./db";
+import { getDueItems, getSoonestItems, getStartedAyahs } from "./db";
 import { segmentSurah, type Segment } from "./segments";
 
 /**
@@ -52,4 +52,17 @@ export function buildSessionPlan(activeSurah: number, maxReviews = 40): SessionP
   }));
 
   return { newItems, reviewItems, segment };
+}
+
+/**
+ * A voluntary extra session when nothing is due: the soonest scheduled
+ * reviews, done early (FSRS handles early reviews natively).
+ */
+export function buildReviewAheadPlan(limit = 12): SessionPlan {
+  const reviewItems: SessionItem[] = getSoonestItems(limit).map((item) => ({
+    surah: item.surah,
+    ayah: item.ayah,
+    kind: "review" as const,
+  }));
+  return { newItems: [], reviewItems, segment: null };
 }

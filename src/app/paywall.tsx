@@ -23,7 +23,11 @@ export default function PaywallScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('paywall.close')}>
             <Ionicons name="close" size={26} color={theme.text} />
           </Pressable>
         </View>
@@ -47,23 +51,21 @@ export default function PaywallScreen() {
             ))}
           </View>
 
-          <View style={styles.plans}>
-            <ThemedView type="backgroundElement" style={styles.plan}>
-              <ThemedText type="smallBold">{t('paywall.monthly')}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                …
-              </ThemedText>
-            </ThemedView>
-            <ThemedView
-              style={[styles.plan, { backgroundColor: theme.tintSoft, borderColor: theme.tint, borderWidth: 1.5 }]}>
+          <ThemedView
+            style={[
+              styles.comingSoon,
+              { backgroundColor: theme.tintSoft, borderColor: theme.tint },
+            ]}>
+            <Ionicons name="hourglass-outline" size={20} color={theme.tint} />
+            <View style={{ flex: 1 }}>
               <ThemedText type="smallBold" style={{ color: theme.tint }}>
-                {t('paywall.yearly')}
+                {t('paywall.comingSoonTitle')}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                …
+                {t('paywall.comingSoonBody')}
               </ThemedText>
-            </ThemedView>
-          </View>
+            </View>
+          </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.sadaqa}>
             <View style={styles.sadaqaHeader}>
@@ -74,10 +76,6 @@ export default function PaywallScreen() {
               {t('paywall.sadaqaBody')}
             </ThemedText>
           </ThemedView>
-
-          <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-            {t('paywall.comingSoon')}
-          </ThemedText>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -92,13 +90,14 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   features: { alignSelf: 'stretch', gap: Spacing.two, marginTop: Spacing.two },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  plans: { flexDirection: 'row', gap: Spacing.two, alignSelf: 'stretch' },
-  plan: {
-    flex: 1,
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
+  comingSoon: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.two,
+    borderRadius: Spacing.three,
+    borderWidth: 1.5,
+    padding: Spacing.three,
   },
   sadaqa: {
     alignSelf: 'stretch',

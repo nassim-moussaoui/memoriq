@@ -17,7 +17,13 @@
     "estimated": "≈ {{minutes}} min",
     "start": "Start session",
     "allDone": "You're all caught up for today 🎉",
-    "allDoneHint": "Come back tonight: reviewing right before sleep helps your brain consolidate overnight.",
+    "streakStart": "Start your streak today",
+    "nextDueToday": "Next reviews today around {{time}}",
+    "nextDueTomorrow": "Next reviews tomorrow around {{time}}",
+    "nextDueOn": "Next reviews {{date}}",
+    "readSurah": "Read the surah",
+    "reviewAhead": "Review ahead",
+    "explore": "Explore the surahs",
     "activeSurah": "Current surah",
     "eveningTip": "Tip: a short review right before sleeping improves consolidation (sleep science).",
     "changeSurah": "Change"
@@ -32,7 +38,8 @@
   },
   "surah": {
     "learn": "Learn this surah",
-    "continue": "Continue learning",
+    "reviewDue": "Review due verses",
+    "pickNext": "Pick the next surah",
     "listen": "Listen",
     "stop": "Stop",
     "loop": "Loop",
@@ -67,6 +74,7 @@
     "skip": "Skip",
     "next": "Next",
     "start": "Start",
+    "save": "Save my plan",
     "slide1Title": "Without review,\nalmost everything fades",
     "slide1Body": "As early as 1885, Hermann Ebbinghaus measured the \"forgetting curve\": within days, most of what we just learned is gone.",
     "slide1Caption": "Memory retained without review",
@@ -142,7 +150,7 @@
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "The whole Quran, multiple reciters, advanced stats",
     "premiumCta": "Learn more",
-    "account": "Sync disabled: fill in .env.local (see .env.example)."
+    "account": "Sync is unavailable in this build."
   },
   "auth": {
     "title": "Account",
@@ -152,6 +160,9 @@
     "signIn": "Sign in",
     "signUp": "Create account",
     "signOut": "Sign out",
+    "signOutConfirmTitle": "Sign out?",
+    "signOutConfirmBody": "Your progress stays saved on this device and in the cloud. You can sign back in anytime.",
+    "cancel": "Cancel",
     "confirmEmail": "Account created: confirm your address from the email we sent, then sign in.",
     "sync": "Sync now",
     "syncNever": "Never synced",
@@ -159,17 +170,22 @@
     "syncDone": "Synced: {{items}} verses · {{logs}} reviews pushed",
     "error": "Error: {{message}}"
   },
+  "a11y": {
+    "back": "Back",
+    "close": "Close",
+    "playVerse": "Play the verse",
+    "pause": "Pause"
+  },
   "paywall": {
     "title": "Unlock the whole Quran",
     "subtitle": "Juz' 'Amma and Al-Fatiha are free forever. Premium unlocks all 114 surahs and every feature.",
     "feature1": "All 114 surahs, offline",
     "feature2": "All reciters",
     "feature3": "Advanced statistics",
-    "monthly": "Monthly",
-    "yearly": "Yearly",
+    "comingSoonTitle": "Premium is coming soon",
+    "comingSoonBody": "Meanwhile, Al-Fatiha and all of Juz' 'Amma stay free, forever.",
     "sadaqaTitle": "Premium + Sadaqa",
     "sadaqaBody": "Pay a little more and gift a Memoriq Premium subscription to a student who can't afford one, somewhere in the world.",
-    "comingSoon": "Purchases are coming soon: the app is under development.",
     "close": "Close"
   }
 }

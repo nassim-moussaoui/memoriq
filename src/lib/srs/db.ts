@@ -82,6 +82,24 @@ export function getDueItems(now: number = Date.now(), limit = 50): ItemRow[] {
   return rows.map(toItem);
 }
 
+/** Timestamp of the next scheduled review strictly in the future, or null. */
+export function getNextDueAt(now: number = Date.now()): number | null {
+  const row = db.getFirstSync<{ next: number | null }>(
+    "SELECT MIN(due_at) AS next FROM memorization_items WHERE due_at > ?",
+    [now]
+  );
+  return row?.next ?? null;
+}
+
+/** The soonest scheduled (not yet due) items, for reviewing ahead of time. */
+export function getSoonestItems(limit = 12, now: number = Date.now()): ItemRow[] {
+  const rows = db.getAllSync<RawRow>(
+    "SELECT * FROM memorization_items WHERE due_at > ? ORDER BY due_at ASC LIMIT ?",
+    [now, limit]
+  );
+  return rows.map(toItem);
+}
+
 export function countDue(now: number = Date.now()): number {
   const row = db.getFirstSync<{ n: number }>(
     "SELECT COUNT(*) AS n FROM memorization_items WHERE due_at <= ?",
