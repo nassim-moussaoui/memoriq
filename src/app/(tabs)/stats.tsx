@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { localDay } from '@/lib/dates';
 import { chapters } from '@/lib/quran';
 import {
   getDailyReviewCounts,
@@ -32,12 +33,6 @@ function enter(index: number) {
   return FadeInDown.delay(index * 70).springify().damping(20);
 }
 
-function dayKey(day: Date) {
-  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
-    day.getDate(),
-  ).padStart(2, '0')}`;
-}
-
 type Cell = { key: string; date: Date; count: number; future: boolean };
 
 /** 13 weeks of days, Monday-first columns, ending with the current week. */
@@ -53,7 +48,7 @@ function buildHeatmap(counts: Map<string, number>): Cell[][] {
     for (let d = 0; d < 7; d++) {
       const date = new Date(start);
       date.setDate(start.getDate() + w * 7 + d);
-      const key = dayKey(date);
+      const key = localDay(date);
       column.push({ key, date, count: counts.get(key) ?? 0, future: date > today });
     }
     columns.push(column);

@@ -24,7 +24,7 @@ function reciterDir(reciter: Reciter): Directory {
 }
 
 /** Local file URI when the verse is already cached, otherwise null. */
-export function cachedAyahUri(reciter: Reciter, surah: number, ayah: number): string | null {
+function cachedAyahUri(reciter: Reciter, surah: number, ayah: number): string | null {
   if (!enabled) return null;
   try {
     const file = new File(reciterDir(reciter), fileName(surah, ayah));

@@ -7,6 +7,9 @@ import fr from "@/locales/fr.json";
 
 const deviceLanguage = Localization.getLocales()[0]?.languageCode ?? "en";
 
+// i18next's documented setup (default instance); `use` here is the plugin
+// registration method, not React's `use`.
+// eslint-disable-next-line import/no-named-as-default-member
 i18n.use(initReactI18next).init({
   resources: { fr: { translation: fr }, en: { translation: en } },
   lng: deviceLanguage === "fr" ? "fr" : "en",

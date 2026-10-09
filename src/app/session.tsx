@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FlowProgress } from '@/components/onboarding/primitives';
+import { FlowProgress } from '@/components/ui/flow-progress';
 import { MaskedArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
 import { ChainStep, type ChainOutcome } from '@/components/session/chain-step';
 import { ListenPanel } from '@/components/session/listen-panel';

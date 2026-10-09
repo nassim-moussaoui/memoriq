@@ -67,8 +67,7 @@
     "empty": "No surah matches.",
     "verses_one": "{{count}} verse",
     "verses_other": "{{count}} verses",
-    "premium": "Premium",
-    "freeBadge": "Free"
+    "premium": "Premium"
   },
   "surah": {
     "learn": "Learn this surah",
@@ -271,7 +270,6 @@
     "method": "Our scientific method",
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "The whole Quran, multiple reciters, advanced stats",
-    "premiumCta": "Learn more",
     "account": "Sync is unavailable in this build.",
     "sectionLearning": "Learning",
     "plan": "My plan",

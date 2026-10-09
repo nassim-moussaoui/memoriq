@@ -33,8 +33,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export { PrimaryButton } from '@/components/ui/primary-button';
-
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /** Staggered entrance used by every block of a step (index = order on screen). */
@@ -115,21 +113,6 @@ export function AnimatedCounter({
       animatedProps={animatedProps}
       style={[styles.counter, { color: theme.text }, style]}
     />
-  );
-}
-
-/** Thin progress bar of the whole flow, springing to each new step. */
-export function FlowProgress({ progress }: { progress: number }) {
-  const theme = useTheme();
-  const value = useSharedValue(progress);
-  useEffect(() => {
-    value.value = withSpring(progress, { damping: 20, stiffness: 120 });
-  }, [progress, value]);
-  const fillStyle = useAnimatedStyle(() => ({ width: `${Math.max(value.value, 0.02) * 100}%` }));
-  return (
-    <View style={[styles.track, { backgroundColor: theme.backgroundElement }]}>
-      <Animated.View style={[styles.fill, { backgroundColor: theme.tint }, fillStyle]} />
-    </View>
   );
 }
 
@@ -313,8 +296,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 35, fontWeight: 800, letterSpacing: -0.4 },
   body: { fontSize: 15.5, lineHeight: 23, maxWidth: 380 },
   counter: { padding: 0, margin: 0, fontVariant: ['tabular-nums'] },
-  track: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 3 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',

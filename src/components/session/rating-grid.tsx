@@ -25,7 +25,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
  * Turns a scheduled interval into words a learner understands. "Again" is
  * always retried right away in the session, so it gets its own label.
  */
-export function useDescribeReturn() {
+function useDescribeReturn() {
   const { t } = useTranslation();
   return (grade: Grade, minutes: number): string => {
     if (grade === Rating.Again) return t('session.returnNow');

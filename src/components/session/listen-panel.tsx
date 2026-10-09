@@ -22,7 +22,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Listens suggested before reciting a new verse (not enforced). */
-export const LISTEN_TARGET = 3;
+const LISTEN_TARGET = 3;
 
 const BUTTON = 64;
 

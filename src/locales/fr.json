@@ -67,8 +67,7 @@
     "empty": "Aucune sourate ne correspond.",
     "verses_one": "{{count}} verset",
     "verses_other": "{{count}} versets",
-    "premium": "Premium",
-    "freeBadge": "Gratuit"
+    "premium": "Premium"
   },
   "surah": {
     "learn": "Apprendre cette sourate",
@@ -271,7 +270,6 @@
     "method": "Notre méthode scientifique",
     "premiumTitle": "Memoriq Premium",
     "premiumSubtitle": "Tout le Coran, récitateurs multiples, statistiques avancées",
-    "premiumCta": "Découvrir",
     "account": "Synchronisation indisponible dans cette version.",
     "sectionLearning": "Apprentissage",
     "plan": "Mon plan",

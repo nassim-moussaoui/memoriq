@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { localDay } from "@/lib/dates";
+
 import { DEFAULT_RECITER_ID } from "@/lib/audio";
 
 export type Level = "beginner" | "intermediate" | "advanced";
@@ -82,13 +84,6 @@ type AppState = {
   addPendingDeletes: (items: { surah: number; ayah: number }[]) => void;
   clearPendingDeletes: (count: number) => void;
 };
-
-function localDay(date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 export const useAppStore = create<AppState>()(
   persist(

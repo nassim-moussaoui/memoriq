@@ -45,7 +45,7 @@ export function SettingsSection({
 }
 
 /** Rounded colored square holding a row's icon. */
-export function SettingsIcon({ icon, color }: { icon: IconName; color: string }) {
+function SettingsIcon({ icon, color }: { icon: IconName; color: string }) {
   return (
     <View style={[styles.icon, { backgroundColor: color }]}>
       <Ionicons name={icon} size={16} color="#ffffff" />

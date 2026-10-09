@@ -29,9 +29,3 @@ export function segmentSurah(versesCount: number): Segment[] {
   }
   return segments;
 }
-
-export function segmentForAyah(versesCount: number, ayah: number): Segment {
-  const segments = segmentSurah(versesCount);
-  const found = segments.find((s) => ayah >= s.start && ayah <= s.end);
-  return found ?? segments[segments.length - 1];
-}

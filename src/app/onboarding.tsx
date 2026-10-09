@@ -13,15 +13,15 @@ import { PlanBuilder } from '@/components/onboarding/plan-builder';
 import {
   AmbientBackground,
   enterUp,
-  FlowProgress,
   OptionCard,
-  PrimaryButton,
   StepHeader,
   type IconName,
 } from '@/components/onboarding/primitives';
 import { RecallDemo } from '@/components/onboarding/recall-demo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { FlowProgress } from '@/components/ui/flow-progress';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {

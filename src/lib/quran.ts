@@ -45,7 +45,7 @@ export function getVerses(surahId: number): Verse[] {
 }
 
 /** Juz' 'Amma (surahs 78–114) plus Al-Fatiha are included in the free plan. */
-export const JUZ_AMMA_FIRST_SURAH = 78;
+const JUZ_AMMA_FIRST_SURAH = 78;
 
 export function isFreeSurah(id: number): boolean {
   return id === 1 || id >= JUZ_AMMA_FIRST_SURAH;

@@ -23,4 +23,3 @@ export const supabase: SupabaseClient | null =
       })
     : null;
 
-export const isSupabaseConfigured = supabase !== null;

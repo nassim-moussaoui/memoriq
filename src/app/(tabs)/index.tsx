@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { localDay } from '@/lib/dates';
 import { describeNextDue, nextDueKey, type NextDue } from '@/lib/next-due';
 import { getChapter } from '@/lib/quran';
 import { getDailyReviewCounts, getMemorizedCountBySurah, getNextDueAt, getStartedAyahs } from '@/lib/srs/db';
@@ -34,12 +35,6 @@ const MOMENT_ICONS: Record<string, IconName> = {
 
 function enter(index: number) {
   return FadeInDown.delay(index * 70).springify().damping(20);
-}
-
-function dayKey(day: Date) {
-  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
-    day.getDate(),
-  ).padStart(2, '0')}`;
 }
 
 /** Number + label column inside the session hero (white on the accent). */
@@ -150,7 +145,7 @@ export default function TodayScreen() {
       for (let offset = 6; offset >= 0; offset--) {
         const day = new Date();
         day.setDate(day.getDate() - offset);
-        const key = dayKey(day);
+        const key = localDay(day);
         days.push({
           key,
           label: day.toLocaleDateString(i18n.language, { weekday: 'narrow' }),
