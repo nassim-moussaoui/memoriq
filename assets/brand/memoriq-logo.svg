@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14A37C"/>
+      <stop offset="1" stop-color="#05503B"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAF6F0"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F6D77E"/>
+      <stop offset="1" stop-color="#D9A53A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <path d="M512.0,60.0 L644.3,192.5 L831.6,192.4 L831.5,379.7 L964.0,512.0 L831.5,644.3 L831.6,831.6 L644.3,831.5 L512.0,964.0 L379.7,831.5 L192.4,831.6 L192.5,644.3 L60.0,512.0 L192.5,379.7 L192.4,192.4 L379.7,192.5 Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.13" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M626.8,234.8 L674.3,349.7 L789.2,397.2 L741.5,512.0 L789.2,626.8 L674.3,674.3 L626.8,789.2 L512.0,741.5 L397.2,789.2 L349.7,674.3 L234.8,626.8 L282.5,512.0 L234.8,397.2 L349.7,349.7 L397.2,234.8 L512.0,282.5 Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M306 716 L306 384 L512 612 L718 384 L718 716" fill="none" stroke="#04382A" stroke-opacity="0.25" stroke-width="102" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 14)"/>
+  <path d="M306 716 L306 384 L512 612 L718 384 L718 716" fill="none" stroke="url(#ink)" stroke-width="102" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M512.0,268.0 L524.4,292.1 L550.2,283.8 L541.9,309.6 L566.0,322.0 L541.9,334.4 L550.2,360.2 L524.4,351.9 L512.0,376.0 L499.6,351.9 L473.8,360.2 L482.1,334.4 L458.0,322.0 L482.1,309.6 L473.8,283.8 L499.6,292.1 Z" fill="url(#gold)"/>
+</svg>
