@@ -62,6 +62,7 @@ export default function RootLayout() {
         <Stack.Screen name="surah/[id]" />
         <Stack.Screen name="session" options={{ gestureEnabled: false }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="account-edit" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

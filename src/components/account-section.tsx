@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { createURL } from 'expo-linking';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -146,6 +147,24 @@ export function AccountSection() {
               </View>
             </View>
           </View>
+          <View style={[styles.separator, { backgroundColor: theme.backgroundSelected }]} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/account-edit', params: { field: 'email' } })}
+            style={({ pressed }) => [styles.action, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            <Ionicons name="mail-outline" size={18} color={theme.text} />
+            <ThemedText style={[styles.actionText, styles.flex]}>{t('auth.changeEmail')}</ThemedText>
+            <Ionicons name="chevron-forward" size={17} color={theme.textSecondary} />
+          </Pressable>
+          <View style={[styles.separator, { backgroundColor: theme.backgroundSelected }]} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/account-edit', params: { field: 'password' } })}
+            style={({ pressed }) => [styles.action, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            <Ionicons name="key-outline" size={18} color={theme.text} />
+            <ThemedText style={[styles.actionText, styles.flex]}>{t('auth.changePassword')}</ThemedText>
+            <Ionicons name="chevron-forward" size={17} color={theme.textSecondary} />
+          </Pressable>
           <View style={[styles.separator, { backgroundColor: theme.backgroundSelected }]} />
           <Pressable
             accessibilityRole="button"

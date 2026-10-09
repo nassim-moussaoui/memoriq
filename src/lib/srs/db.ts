@@ -297,3 +297,8 @@ export function getSurahStatuses(surah: number, now: number = Date.now()): Map<n
     ])
   );
 }
+
+/** Erases all learning state on this phone (cards and review history). */
+export function resetDatabase(): void {
+  db.execSync("DELETE FROM memorization_items; DELETE FROM review_logs;");
+}

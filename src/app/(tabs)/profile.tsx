@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountSection } from '@/components/account-section';
+import { DataSection } from '@/components/data-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SettingsRow, SettingsSection, Stepper } from '@/components/ui/settings';
@@ -241,6 +242,8 @@ export default function ProfileScreen() {
               />
             ) : null}
           </SettingsSection>
+
+          <DataSection />
 
           <SettingsSection title={t('profile.sectionAbout')}>
             <SettingsRow

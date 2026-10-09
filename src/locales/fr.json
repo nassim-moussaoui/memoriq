@@ -302,7 +302,9 @@
     "error": "Erreur : {{message}}",
     "forgot": "Mot de passe oublié ?",
     "resetNeedsEmail": "Saisis d'abord ton email ci-dessus.",
-    "resetSent": "Email envoyé : ouvre le lien reçu sur ce téléphone pour choisir un nouveau mot de passe."
+    "resetSent": "Email envoyé : ouvre le lien reçu sur ce téléphone pour choisir un nouveau mot de passe.",
+    "changeEmail": "Modifier l'email",
+    "changePassword": "Changer le mot de passe"
   },
   "a11y": {
     "back": "Retour",
@@ -403,5 +405,47 @@
     "undoBody_one": "{{count}} verset redeviendra « à apprendre ». Les versets déjà vérifiés en révision sont conservés.",
     "undoBody_other": "{{count}} versets redeviendront « à apprendre ». Les versets déjà vérifiés en révision sont conservés.",
     "undoCta": "Retirer"
+  },
+  "data": {
+    "section": "Mes données",
+    "footer": "Ta progression est enregistrée sur ce téléphone, et dans le cloud si tu es connecté. Ces actions sont définitives.",
+    "kb": "{{n}} Ko",
+    "mb": "{{n}} Mo",
+    "cache": "Récitations hors ligne",
+    "cacheTitle": "Vider le cache audio ?",
+    "cacheBody": "Les récitations téléchargées seront supprimées de ce téléphone. Elles se retéléchargeront à la prochaine écoute. Ta progression ne change pas.",
+    "cacheCta": "Vider",
+    "progress": "Effacer ma progression",
+    "progressDetailLocal": "Sur ce téléphone",
+    "progressDetailCloud": "Sur ce téléphone et dans le cloud",
+    "progressTitle": "Effacer ta progression ?",
+    "progressBodyLocal": "Tous tes versets, révisions et ta série seront effacés de ce téléphone. Ton plan et tes réglages sont conservés.",
+    "progressBodyCloud": "Tous tes versets, révisions et ta série seront effacés de ce téléphone et de ton compte. Ton compte, ton plan et tes réglages sont conservés.",
+    "progressCta": "Effacer",
+    "erase": "Tout effacer",
+    "eraseDetail": "Remet l'app à zéro",
+    "eraseTitle": "Tout effacer ?",
+    "eraseBody": "Progression, plan, réglages, rappels et récitations téléchargées : tout sera supprimé de ce téléphone et l'app repartira de zéro.",
+    "eraseCta": "Tout effacer",
+    "delete": "Supprimer mon compte",
+    "deleteDetail": "Et toutes les données associées",
+    "deleteTitle": "Supprimer ton compte ?",
+    "deleteBody": "Ton compte et toutes les données enregistrées avec (progression, révisions, profil) seront supprimés du cloud, puis ce téléphone sera remis à zéro.",
+    "deleteCta": "Continuer",
+    "deleteConfirmTitle": "Dernière confirmation",
+    "deleteConfirmBody": "Cette action est irréversible. Ton compte ne pourra pas être récupéré.",
+    "deleteConfirmCta": "Supprimer définitivement",
+    "errorTitle": "L'opération a échoué"
+  },
+  "accountEdit": {
+    "emailTitle": "Nouvel email",
+    "emailBody": "Adresse actuelle : {{email}}. Un lien de confirmation sera envoyé à la nouvelle adresse.",
+    "newEmail": "Nouvelle adresse email",
+    "invalidEmail": "Cette adresse email n'est pas valide.",
+    "emailSentTitle": "Vérifie ta boîte mail",
+    "emailSentBody": "Ouvre le lien envoyé à {{email}} pour confirmer le changement.",
+    "passwordTitle": "Nouveau mot de passe",
+    "passwordDoneBody": "Ton mot de passe a bien été modifié.",
+    "close": "Terminé"
   }
 }

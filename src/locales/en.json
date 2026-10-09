@@ -302,7 +302,9 @@
     "error": "Error: {{message}}",
     "forgot": "Forgot your password?",
     "resetNeedsEmail": "Enter your email above first.",
-    "resetSent": "Email sent: open the link on this phone to choose a new password."
+    "resetSent": "Email sent: open the link on this phone to choose a new password.",
+    "changeEmail": "Change email",
+    "changePassword": "Change password"
   },
   "a11y": {
     "back": "Back",
@@ -403,5 +405,47 @@
     "undoBody_one": "{{count}} verse goes back to \"to learn\". Verses already checked in a review are kept.",
     "undoBody_other": "{{count}} verses go back to \"to learn\". Verses already checked in a review are kept.",
     "undoCta": "Remove"
+  },
+  "data": {
+    "section": "My data",
+    "footer": "Your progress is stored on this phone, and in the cloud when you are signed in. These actions are permanent.",
+    "kb": "{{n}} KB",
+    "mb": "{{n}} MB",
+    "cache": "Offline recitations",
+    "cacheTitle": "Clear the audio cache?",
+    "cacheBody": "Downloaded recitations will be removed from this phone. They download again next time you listen. Your progress is unchanged.",
+    "cacheCta": "Clear",
+    "progress": "Reset my progress",
+    "progressDetailLocal": "On this phone",
+    "progressDetailCloud": "On this phone and in the cloud",
+    "progressTitle": "Reset your progress?",
+    "progressBodyLocal": "All your verses, reviews and streak will be erased from this phone. Your plan and settings are kept.",
+    "progressBodyCloud": "All your verses, reviews and streak will be erased from this phone and your account. Your account, plan and settings are kept.",
+    "progressCta": "Reset",
+    "erase": "Erase everything",
+    "eraseDetail": "Resets the app",
+    "eraseTitle": "Erase everything?",
+    "eraseBody": "Progress, plan, settings, reminders and downloaded recitations: everything will be removed from this phone and the app starts over.",
+    "eraseCta": "Erase everything",
+    "delete": "Delete my account",
+    "deleteDetail": "And all associated data",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your account and all data stored with it (progress, reviews, profile) will be deleted from the cloud, then this phone will be reset.",
+    "deleteCta": "Continue",
+    "deleteConfirmTitle": "Final confirmation",
+    "deleteConfirmBody": "This cannot be undone. Your account cannot be recovered.",
+    "deleteConfirmCta": "Delete permanently",
+    "errorTitle": "The operation failed"
+  },
+  "accountEdit": {
+    "emailTitle": "New email",
+    "emailBody": "Current address: {{email}}. A confirmation link will be sent to the new address.",
+    "newEmail": "New email address",
+    "invalidEmail": "This email address is not valid.",
+    "emailSentTitle": "Check your inbox",
+    "emailSentBody": "Open the link sent to {{email}} to confirm the change.",
+    "passwordTitle": "New password",
+    "passwordDoneBody": "Your password has been changed.",
+    "close": "Done"
   }
 }
