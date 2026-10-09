@@ -37,7 +37,11 @@ export function newCard(now: Date = new Date()): Card {
 
 /** Grade = Again | Hard | Good | Easy (Rating minus Manual). */
 export function rate(card: Card, rating: Grade, now: Date = new Date()): Card {
-  return engine.next(card, now, rating).card;
+  // ts-fsrs copies unknown fields over; drop the "declared known" flag (see
+  // srs/known.ts) so a real review turns it into verified progress.
+  const next = engine.next(card, now, rating).card as Card & { known?: true };
+  delete next.known;
+  return next;
 }
 
 /**

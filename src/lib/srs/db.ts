@@ -66,6 +66,11 @@ export function saveItem(surah: number, ayah: number, card: Card): void {
   );
 }
 
+/** Removes one ayah from local learning state (its logs are kept). */
+export function deleteItem(surah: number, ayah: number): void {
+  db.runSync("DELETE FROM memorization_items WHERE surah = ? AND ayah = ?", [surah, ayah]);
+}
+
 export function logReview(surah: number, ayah: number, rating: number, now: number = Date.now()): void {
   db.runSync(
     "INSERT INTO review_logs (surah, ayah, rating, reviewed_at) VALUES (?, ?, ?, ?)",

@@ -397,6 +397,13 @@
     "done_one": "{{count}} sourate ajoutée à tes acquis ({{verses}} versets).",
     "done_other": "{{count}} sourates ajoutées à tes acquis ({{verses}} versets).",
     "readerTitle": "Je connais déjà cette sourate",
-    "readerDesc": "La passer directement en révision"
+    "readerDesc": "La passer directement en révision",
+    "undoRowTitle": "Retirer de mes acquis",
+    "undoRowDesc_one": "{{count}} verset déclaré connu, pas encore vérifié",
+    "undoRowDesc_other": "{{count}} versets déclarés connus, pas encore vérifiés",
+    "undoTitle": "Retirer cette sourate de tes acquis ?",
+    "undoBody_one": "{{count}} verset redeviendra « à apprendre ». Les versets déjà vérifiés en révision sont conservés.",
+    "undoBody_other": "{{count}} versets redeviendront « à apprendre ». Les versets déjà vérifiés en révision sont conservés.",
+    "undoCta": "Retirer"
   }
 }

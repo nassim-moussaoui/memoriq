@@ -53,6 +53,13 @@ type AppState = {
   /** Local date (YYYY-MM-DD) of the last completed session. */
   lastSessionDay: string | null;
 
+  /**
+   * Verses removed locally ("no longer known") that must also be deleted
+   * on the server, otherwise the next pull would bring them back. Kept here
+   * so an offline removal is applied at the next sync.
+   */
+  pendingDeletes: { surah: number; ayah: number }[];
+
   /** Highest local review_logs id already pushed to Supabase. */
   lastPushedLogId: number;
   lastSyncAt: number | null;
@@ -72,6 +79,8 @@ type AppState = {
   setArabicFontScale: (v: number) => void;
   registerSessionDone: () => void;
   markSynced: (lastPushedLogId: number) => void;
+  addPendingDeletes: (items: { surah: number; ayah: number }[]) => void;
+  clearPendingDeletes: (count: number) => void;
 };
 
 function localDay(date = new Date()): string {
@@ -104,6 +113,7 @@ export const useAppStore = create<AppState>()(
       streak: 0,
       lastSessionDay: null,
 
+      pendingDeletes: [],
       lastPushedLogId: 0,
       lastSyncAt: null,
 
@@ -140,6 +150,9 @@ export const useAppStore = create<AppState>()(
       },
 
       markSynced: (lastPushedLogId) => set({ lastPushedLogId, lastSyncAt: Date.now() }),
+      addPendingDeletes: (items) => set({ pendingDeletes: [...get().pendingDeletes, ...items] }),
+      // Drops the first `count` entries (the ones a sync just applied).
+      clearPendingDeletes: (count) => set({ pendingDeletes: get().pendingDeletes.slice(count) }),
     }),
     {
       name: "memoriq-app",

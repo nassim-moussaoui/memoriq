@@ -14,10 +14,16 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getChapter, getVerses, isFreeSurah, type Verse } from '@/lib/quran';
 import { getSurahStatuses, type VerseStatus } from '@/lib/srs/db';
-import { markSurahsKnown, countUnstartedVerses } from '@/lib/srs/known';
+import {
+  countUnstartedVerses,
+  getKnownAyahs,
+  markSurahsKnown,
+  unmarkSurahKnown,
+} from '@/lib/srs/known';
 import { buildChainQueue, nextSegment } from '@/lib/srs/queue';
 import { confirmSurahSwitch } from '@/lib/surah-switch';
 import { useAppStore } from '@/lib/store';
+import { syncNow } from '@/lib/sync';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -42,6 +48,7 @@ export default function SurahScreen() {
   const [loop, setLoop] = useState(false);
   const [statuses, setStatuses] = useState<Map<number, VerseStatus>>(new Map());
   const [chainable, setChainable] = useState(0);
+  const [knownCount, setKnownCount] = useState(0);
   const loopRef = useRef(false);
   const playAllRef = useRef(false);
   const listRef = useRef<FlatList<Verse>>(null);
@@ -53,6 +60,7 @@ export default function SurahScreen() {
       if (!valid) return;
       setStatuses(getSurahStatuses(surahId));
       setChainable(buildChainQueue(surahId).length);
+      setKnownCount(getKnownAyahs(surahId).length);
     }, [surahId, valid]),
   );
 
@@ -115,6 +123,12 @@ export default function SurahScreen() {
     router.push('/session');
   };
 
+  const refreshState = () => {
+    setStatuses(getSurahStatuses(surahId));
+    setChainable(buildChainQueue(surahId).length);
+    setKnownCount(getKnownAyahs(surahId).length);
+  };
+
   const markKnown = () => {
     const verses = countUnstartedVerses([surahId]);
     Alert.alert(
@@ -127,12 +141,27 @@ export default function SurahScreen() {
           onPress: () => {
             markSurahsKnown([surahId]);
             void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setStatuses(getSurahStatuses(surahId));
-            setChainable(buildChainQueue(surahId).length);
+            refreshState();
           },
         },
       ],
     );
+  };
+
+  const unmarkKnown = () => {
+    Alert.alert(t('known.undoTitle'), t('known.undoBody', { count: knownCount }), [
+      { text: t('auth.cancel'), style: 'cancel' },
+      {
+        text: t('known.undoCta'),
+        style: 'destructive',
+        onPress: () => {
+          unmarkSurahKnown(surahId);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          refreshState();
+          syncNow().catch(() => {});
+        },
+      },
+    ]);
   };
 
   const learned = [...statuses.values()].filter((s) => s === 'learned').length;
@@ -261,6 +290,27 @@ export default function SurahScreen() {
             <ThemedText style={styles.chainTitle}>{t('known.readerTitle')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.chainDesc}>
               {t('known.readerDesc')}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
+
+      {knownCount > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={unmarkKnown}
+          style={({ pressed }) => [
+            styles.chainCard,
+            { backgroundColor: theme.backgroundElement, transform: [{ scale: pressed ? 0.98 : 1 }] },
+          ]}>
+          <View style={[styles.chainIcon, { backgroundColor: theme.danger + '22' }]}>
+            <Ionicons name="arrow-undo" size={18} color={theme.danger} />
+          </View>
+          <View style={styles.flex}>
+            <ThemedText style={styles.chainTitle}>{t('known.undoRowTitle')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.chainDesc}>
+              {t('known.undoRowDesc', { count: knownCount })}
             </ThemedText>
           </View>
           <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />

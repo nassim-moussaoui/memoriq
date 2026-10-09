@@ -23,6 +23,25 @@ export async function syncNow(): Promise<SyncResult | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // Deletions first, so the pull below cannot resurrect removed verses.
+  const { pendingDeletes } = useAppStore.getState();
+  const bySurah = new Map<number, number[]>();
+  for (const item of pendingDeletes) {
+    bySurah.set(item.surah, [...(bySurah.get(item.surah) ?? []), item.ayah]);
+  }
+  for (const [surah, ayahs] of bySurah) {
+    const { error } = await supabase
+      .from("memorization_items")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("surah", surah)
+      .in("ayah", ayahs);
+    if (error) throw error;
+  }
+  if (pendingDeletes.length > 0) {
+    useAppStore.getState().clearPendingDeletes(pendingDeletes.length);
+  }
+
   const { data: remoteItems, error: pullError } = await supabase
     .from("memorization_items")
     .select("surah, ayah, card");

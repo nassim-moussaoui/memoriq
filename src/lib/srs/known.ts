@@ -1,11 +1,20 @@
 import { getChapter } from "@/lib/quran";
+import { useAppStore } from "@/lib/store";
 
-import { getStartedAyahs, saveItem } from "./db";
-import { newCard, rate, Rating } from "./scheduler";
+import { deleteItem, getAllItems, getStartedAyahs, saveItem } from "./db";
+import { newCard, rate, Rating, type Card } from "./scheduler";
 
 const DAY = 24 * 60 * 60 * 1000;
 const FIRST_CHECK_MIN_DAYS = 7;
 const FIRST_CHECK_MAX_DAYS = 45;
+
+/**
+ * A card created by "I already know this surah". The flag travels with the
+ * card JSON (SQLite and Supabase), and disappears on its own the first time
+ * the verse is really reviewed, since the scheduler returns a fresh card:
+ * from then on it is verified progress, no longer just a declaration.
+ */
+type KnownCard = Card & { known?: true };
 
 /** Verses of these surahs not started yet (what marking them would add). */
 export function countUnstartedVerses(surahIds: number[]): number {
@@ -41,9 +50,29 @@ export function markSurahsKnown(surahIds: number[], now: number = Date.now()): n
       if (started.has(ayah)) continue;
       const card = rate(newCard(new Date(now)), Rating.Easy, new Date(now));
       // Same day for the whole surah; one second apart keeps mushaf order.
-      saveItem(surahId, ayah, { ...card, due: new Date(due + ayah * 1000) });
+      const known: KnownCard = { ...card, due: new Date(due + ayah * 1000), known: true };
+      saveItem(surahId, ayah, known);
       added += 1;
     }
   });
   return added;
+}
+
+/** Ayahs of a surah still only declared known (never reviewed since). */
+export function getKnownAyahs(surahId: number): number[] {
+  return getAllItems()
+    .filter((item) => item.surah === surahId && (item.card as KnownCard).known)
+    .map((item) => item.ayah);
+}
+
+/**
+ * Undoes "I already know this surah" for the verses that were never reviewed
+ * since: they go back to "not started", locally and (at the next sync) on the
+ * account. Verses already verified in a review are kept. Returns the count.
+ */
+export function unmarkSurahKnown(surahId: number): number {
+  const ayahs = getKnownAyahs(surahId);
+  for (const ayah of ayahs) deleteItem(surahId, ayah);
+  useAppStore.getState().addPendingDeletes(ayahs.map((ayah) => ({ surah: surahId, ayah })));
+  return ayahs.length;
 }
