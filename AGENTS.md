@@ -37,4 +37,5 @@ Next: phase 5 (RevenueCat paywall and the Sadaqa gift flow). The Supabase dashbo
 - Arabic text: `writingDirection: 'rtl'`, generous lineHeight (about 1.8x).
 - Colors via `useTheme()` from `src/hooks/use-theme` (light + dark both defined in `src/constants/theme.ts`; accent = `tint`).
 - SQLite access is synchronous (`getAllSync` etc.) and must stay off web (mobile-first).
-- Verify with: `npx tsc --noEmit` and `npx expo lint` (0 errors expected; react-hooks rules are strict: no ref access/setState during render).
+- Verify with: `npx tsc --noEmit`, `npx expo lint` (0 problems expected; react-hooks rules are strict: no ref access/setState during render) and, after any dependency change, `npx expo export --platform ios` (tsc and lint cannot see a module Metro fails to resolve).
+- Keep `expo-glass-effect`, `expo-symbols` and `@expo/ui` installed even though `src/` never imports them: expo-router requires them internally without declaring them, and removing them breaks the bundle. Pin them to the versions compiled into the current native build.
