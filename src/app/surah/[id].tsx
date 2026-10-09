@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,7 +14,9 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getChapter, getVerses, isFreeSurah, type Verse } from '@/lib/quran';
 import { getSurahStatuses, type VerseStatus } from '@/lib/srs/db';
+import { markSurahsKnown, countUnstartedVerses } from '@/lib/srs/known';
 import { buildChainQueue, nextSegment } from '@/lib/srs/queue';
+import { confirmSurahSwitch } from '@/lib/surah-switch';
 import { useAppStore } from '@/lib/store';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
 
@@ -100,9 +103,36 @@ export default function SurahScreen() {
   };
 
   const startLearning = () => {
-    setActiveSurah(surahId);
+    confirmSurahSwitch(activeSurah, surahId, () => {
+      setActiveSurah(surahId);
+      stopAll();
+      router.push({ pathname: '/session', params: { mode: 'learn' } });
+    });
+  };
+
+  const reviewDue = () => {
     stopAll();
     router.push('/session');
+  };
+
+  const markKnown = () => {
+    const verses = countUnstartedVerses([surahId]);
+    Alert.alert(
+      t('known.confirmTitle', { count: 1 }),
+      t('known.confirmBody', { count: verses }),
+      [
+        { text: t('auth.cancel'), style: 'cancel' },
+        {
+          text: t('known.confirmCta'),
+          onPress: () => {
+            markSurahsKnown([surahId]);
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setStatuses(getSurahStatuses(surahId));
+            setChainable(buildChainQueue(surahId).length);
+          },
+        },
+      ],
+    );
   };
 
   const learned = [...statuses.values()].filter((s) => s === 'learned').length;
@@ -216,6 +246,27 @@ export default function SurahScreen() {
         </Pressable>
       ) : null}
 
+      {hasNextSegment ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={markKnown}
+          style={({ pressed }) => [
+            styles.chainCard,
+            { backgroundColor: theme.backgroundElement, transform: [{ scale: pressed ? 0.98 : 1 }] },
+          ]}>
+          <View style={[styles.chainIcon, { backgroundColor: theme.tint + '22' }]}>
+            <Ionicons name="checkmark-done" size={18} color={theme.tint} />
+          </View>
+          <View style={styles.flex}>
+            <ThemedText style={styles.chainTitle}>{t('known.readerTitle')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.chainDesc}>
+              {t('known.readerDesc')}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
+
       {!NO_BASMALA.has(surahId) ? (
         <Text style={[styles.basmala, { color: theme.textSecondary }]}>{BASMALA}</Text>
       ) : null}
@@ -298,7 +349,7 @@ export default function SurahScreen() {
       onPress={startLearning}
     />
   ) : due > 0 ? (
-    <PrimaryButton label={t('surah.reviewDue', { count: due })} icon="refresh" onPress={startLearning} />
+    <PrimaryButton label={t('surah.reviewDue', { count: due })} icon="refresh" onPress={reviewDue} />
   ) : (
     <View style={styles.completed}>
       <ThemedText type="small" themeColor="textSecondary" style={styles.center}>

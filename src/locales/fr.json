@@ -41,7 +41,17 @@
     "surahProgress": "{{memorized}} appris · {{started}} commencés sur {{total}}",
     "weekCount_one": "{{count}}/7 jour",
     "weekCount_other": "{{count}}/7 jours",
-    "exploreDesc": "Les 114 sourates, à lire et à écouter"
+    "exploreDesc": "Les 114 sourates, à lire et à écouter",
+    "capTitle": "Objectif du jour atteint",
+    "capBody_one": "Tu as appris ton nouveau verset du jour. Pour bien l'ancrer, la suite de {{surah}} arrive demain.",
+    "capBody_other": "Tu as appris tes {{count}} nouveaux versets du jour. Pour bien les ancrer, la suite de {{surah}} arrive demain.",
+    "capNote": "Le sommeil consolide ce que tu viens d'apprendre : mieux vaut peu chaque jour que beaucoup en une fois.",
+    "capInHero": "Nouveaux versets du jour faits : la suite de {{surah}} arrive demain.",
+    "learnMore": "Apprendre quelques versets de plus",
+    "surahFinishedTitle": "Sourate terminée !",
+    "surahFinishedBody": "Tu as appris tous les versets de {{surah}}. Ses révisions continuent toutes seules : choisis ta prochaine sourate.",
+    "pickNext": "Choisir la prochaine sourate",
+    "allDoneBody": "Reviens demain pour ta prochaine séance."
   },
   "library": {
     "title": "Sourates",
@@ -367,5 +377,26 @@
     "invalidTitle": "Lien expiré ou invalide",
     "invalidBody": "Redemande un lien depuis ton profil : il n'est valable que peu de temps.",
     "backToProfile": "Aller au profil"
+  },
+  "switch": {
+    "title": "Une sourate à la fois",
+    "body": "Tu es en train d'apprendre {{from}} ({{started}}/{{total}} versets commencés). Apprendre plusieurs sourates en parallèle disperse la mémoire : la méthode traditionnelle consiste à terminer une sourate avant d'en commencer une autre.\n\nSi tu changes quand même, les révisions de {{from}} continueront automatiquement.",
+    "stay": "Rester sur {{surah}}",
+    "go": "Passer à {{surah}}"
+  },
+  "known": {
+    "toggle": "Je connais déjà",
+    "banner": "Coche les sourates que tu connais déjà par cœur. Elles passent directement en révision, sans étape d'apprentissage, et Memoriq vérifiera de temps en temps qu'elles restent solides.",
+    "validate_one": "Valider {{count}} sourate",
+    "validate_other": "Valider {{count}} sourates",
+    "confirmTitle_one": "Marquer cette sourate comme connue ?",
+    "confirmTitle_other": "Marquer {{count}} sourates comme connues ?",
+    "confirmBody_one": "{{count}} verset passera en révision. La première vérification arrivera dans 7 à 45 jours, étalée pour ne pas te surcharger.",
+    "confirmBody_other": "{{count}} versets passeront en révision. La première vérification arrivera dans 7 à 45 jours, étalée pour ne pas te surcharger.",
+    "confirmCta": "Valider",
+    "done_one": "{{count}} sourate ajoutée à tes acquis ({{verses}} versets).",
+    "done_other": "{{count}} sourates ajoutées à tes acquis ({{verses}} versets).",
+    "readerTitle": "Je connais déjà cette sourate",
+    "readerDesc": "La passer directement en révision"
   }
 }

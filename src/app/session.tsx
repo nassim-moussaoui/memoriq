@@ -108,15 +108,19 @@ export default function SessionScreen() {
   const reciterId = useAppStore((s) => s.reciterId);
 
   // "ahead" is the voluntary extra session offered when nothing is due;
-  // "chain" is passage practice on one surah, opened from the reader.
+  // "chain" is passage practice on one surah, opened from the reader;
+  // "learn" asks for new verses even past the daily cap.
   const { mode, surah: chainSurah } = useLocalSearchParams<{ mode?: string; surah?: string }>();
 
   // The queue is frozen at mount; "Again" re-appends the item so it is
   // retried before the session ends.
   const initialQueue = useMemo<QueueItem[]>(() => {
     if (mode === 'chain') return buildChainQueue(Number(chainSurah));
+    if (mode === 'ahead') return sessionQueue(buildReviewAheadPlan());
+    // "learn": the learner explicitly asked for new verses, even past the
+    // daily cap (an extra batch, from the reader or the Today screen).
     return sessionQueue(
-      mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah, minutesPerDay),
+      buildSessionPlan(activeSurah, minutesPerDay, { extraNew: mode === 'learn' }),
     );
   }, [activeSurah, chainSurah, minutesPerDay, mode]);
 

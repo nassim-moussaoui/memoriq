@@ -14,7 +14,13 @@ import { useTheme } from '@/hooks/use-theme';
 import { describeNextDue, nextDueKey, type NextDue } from '@/lib/next-due';
 import { getChapter } from '@/lib/quran';
 import { getDailyReviewCounts, getMemorizedCountBySurah, getNextDueAt, getStartedAyahs } from '@/lib/srs/db';
-import { buildSessionPlan, estimateMinutes, type SessionPlan } from '@/lib/srs/queue';
+import {
+  budgetFor,
+  buildSessionPlan,
+  estimateMinutes,
+  nextSegment,
+  type SessionPlan,
+} from '@/lib/srs/queue';
 import { useAppStore } from '@/lib/store';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -120,6 +126,7 @@ export default function TodayScreen() {
   const [nextDue, setNextDue] = useState<NextDue | null>(null);
   const [week, setWeek] = useState<Day[]>([]);
   const [progress, setProgress] = useState({ started: 0, memorized: 0 });
+  const [surahFinished, setSurahFinished] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -131,6 +138,7 @@ export default function TodayScreen() {
       } else {
         setNextDue(null);
       }
+      setSurahFinished(nextSegment(activeSurah) === null);
       setProgress({
         started: getStartedAyahs(activeSurah).size,
         memorized: getMemorizedCountBySurah().get(activeSurah) ?? 0,
@@ -161,6 +169,7 @@ export default function TodayScreen() {
   const estimatedMinutes = plan ? estimateMinutes(plan) : 1;
   // Reviews beyond the daily budget: say so instead of implying "all done".
   const extraDue = Math.max(0, (plan?.dueTotal ?? 0) - reviewCount);
+  const capReached = !!plan?.newCapReached;
   const activeDays = week.filter((d) => d.active).length;
   const today = new Date().toLocaleDateString(i18n.language, {
     weekday: 'long',
@@ -226,6 +235,11 @@ export default function TodayScreen() {
               {extraDue > 0 ? (
                 <ThemedText style={styles.heroNote}>{t('today.moreDue', { count: extraDue })}</ThemedText>
               ) : null}
+              {newCount === 0 && capReached ? (
+                <ThemedText style={styles.heroNote}>
+                  {t('today.capInHero', { surah: chapter.nameSimple })}
+                </ThemedText>
+              ) : null}
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push('/session')}
@@ -241,29 +255,65 @@ export default function TodayScreen() {
               entering={enter(1)}
               style={[styles.card, styles.doneCard, { backgroundColor: theme.backgroundElement }]}>
               <View style={[styles.doneIcon, { backgroundColor: theme.tintSoft }]}>
-                <Ionicons name="checkmark-done" size={26} color={theme.tint} />
+                <Ionicons
+                  name={surahFinished ? 'trophy-outline' : capReached ? 'sparkles' : 'checkmark-done'}
+                  size={26}
+                  color={theme.tint}
+                />
               </View>
-              <ThemedText style={styles.doneTitle}>{t('today.allDone')}</ThemedText>
-              {nextDue ? (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-                  {t(nextDueKey(nextDue.kind), { time: nextDue.value, date: nextDue.value })}
-                </ThemedText>
-              ) : null}
+              <ThemedText style={styles.doneTitle}>
+                {surahFinished
+                  ? t('today.surahFinishedTitle')
+                  : capReached
+                    ? t('today.capTitle')
+                    : t('today.allDone')}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+                {surahFinished
+                  ? t('today.surahFinishedBody', { surah: chapter.nameSimple })
+                  : capReached
+                    ? t('today.capBody', { count: budgetFor(minutesPerDay).maxNew, surah: chapter.nameSimple })
+                    : nextDue
+                      ? t(nextDueKey(nextDue.kind), { time: nextDue.value, date: nextDue.value })
+                      : t('today.allDoneBody')}
+              </ThemedText>
               <View style={styles.doneActions}>
+                {surahFinished ? (
+                  <PrimaryButton
+                    label={t('today.pickNext')}
+                    icon="library-outline"
+                    onPress={() => router.push('/library')}
+                  />
+                ) : null}
+                {capReached ? (
+                  <PrimaryButton
+                    label={t('today.learnMore')}
+                    icon="add-circle-outline"
+                    onPress={() => router.push({ pathname: '/session', params: { mode: 'learn' } })}
+                  />
+                ) : null}
                 {nextDue ? (
                   <PrimaryButton
                     label={t('today.reviewAhead')}
                     icon="play-forward"
+                    variant={surahFinished || capReached ? 'soft' : 'solid'}
                     onPress={() => router.push({ pathname: '/session', params: { mode: 'ahead' } })}
                   />
                 ) : null}
-                <PrimaryButton
-                  label={t('today.readSurah')}
-                  icon="book-outline"
-                  variant="soft"
-                  onPress={() => router.push(`/surah/${activeSurah}`)}
-                />
+                {!surahFinished ? (
+                  <PrimaryButton
+                    label={t('today.readSurah')}
+                    icon="book-outline"
+                    variant="soft"
+                    onPress={() => router.push(`/surah/${activeSurah}`)}
+                  />
+                ) : null}
               </View>
+              {capReached ? (
+                <ThemedText style={[styles.capNote, { color: theme.textSecondary }]}>
+                  {t('today.capNote')}
+                </ThemedText>
+              ) : null}
             </Animated.View>
           )}
 
@@ -467,6 +517,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardLabel: { fontSize: 12, lineHeight: 16, fontWeight: 700, letterSpacing: 1 },
   doneCard: { alignItems: 'center' },
+  capNote: { fontSize: 12, lineHeight: 17, textAlign: 'center' },
   doneIcon: {
     width: 56,
     height: 56,

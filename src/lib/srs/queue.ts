@@ -79,6 +79,11 @@ export type SessionPlan = {
   segment: Segment | null;
   /** Total reviews actually due, before the budget cap. */
   dueTotal: number;
+  /**
+   * The surah still has verses to learn but today's new-verse cap is used
+   * up: the UI says so and offers an explicit extra batch.
+   */
+  newCapReached: boolean;
 };
 
 /**
@@ -124,9 +129,17 @@ export function nextSegment(surahId: number): Segment | null {
   return null;
 }
 
-export function buildSessionPlan(activeSurah: number, minutesPerDay: 5 | 10 | 20 = 10): SessionPlan {
+export function buildSessionPlan(
+  activeSurah: number,
+  minutesPerDay: 5 | 10 | 20 = 10,
+  options: { extraNew?: boolean } = {}
+): SessionPlan {
   const budget = budgetFor(minutesPerDay);
-  const newBudget = Math.max(0, budget.maxNew - countNewIntroducedToday());
+  // `extraNew` is the learner explicitly asking for one more batch today.
+  const newBudget = options.extraNew
+    ? budget.maxNew
+    : Math.max(0, budget.maxNew - countNewIntroducedToday());
+  const newCapReached = newBudget === 0 && nextSegment(activeSurah) !== null;
 
   const segment = newBudget > 0 ? nextSegment(activeSurah) : null;
   const started = getStartedAyahs(activeSurah);
@@ -147,7 +160,7 @@ export function buildSessionPlan(activeSurah: number, minutesPerDay: 5 | 10 | 20
     }))
   );
 
-  return { newItems, reviewItems, segment, dueTotal: countDue() };
+  return { newItems, reviewItems, segment, dueTotal: countDue(), newCapReached };
 }
 
 /**
@@ -162,5 +175,5 @@ export function buildReviewAheadPlan(limit = 12): SessionPlan {
       kind: "review" as const,
     }))
   );
-  return { newItems: [], reviewItems, segment: null, dueTotal: 0 };
+  return { newItems: [], reviewItems, segment: null, dueTotal: 0, newCapReached: false };
 }

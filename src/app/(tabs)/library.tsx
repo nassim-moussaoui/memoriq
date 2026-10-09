@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Alert, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +12,8 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { chapters, isFreeSurah, type Chapter } from '@/lib/quran';
 import { getMemorizedCountBySurah, getStartedCountBySurah } from '@/lib/srs/db';
+import { countUnstartedVerses, markSurahsKnown } from '@/lib/srs/known';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { useAppStore } from '@/lib/store';
 
 type Filter = 'all' | 'progress' | 'learned' | 'free';
@@ -39,6 +42,9 @@ function SurahRow({
   memorized,
   locked,
   active,
+  selecting,
+  checked,
+  onToggle,
 }: {
   chapter: Chapter;
   name: string;
@@ -46,27 +52,54 @@ function SurahRow({
   memorized: number;
   locked: boolean;
   active: boolean;
+  /** "I already know these" mode: rows become checkboxes. */
+  selecting: boolean;
+  checked: boolean;
+  onToggle: () => void;
 }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const learned = memorized >= chapter.versesCount;
+  const selectable = !locked && started < chapter.versesCount;
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => (locked ? router.push('/paywall') : router.push(`/surah/${chapter.id}`))}
+      accessibilityState={selecting ? { checked, disabled: !selectable } : undefined}
+      disabled={selecting && !selectable}
+      onPress={() =>
+        selecting
+          ? onToggle()
+          : locked
+            ? router.push('/paywall')
+            : router.push(`/surah/${chapter.id}`)
+      }
       style={({ pressed }) => [
         styles.row,
         {
           backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-          borderColor: active ? theme.tint : 'transparent',
+          borderColor: selecting ? (checked ? theme.tint : 'transparent') : active ? theme.tint : 'transparent',
+          opacity: selecting && !selectable ? 0.45 : 1,
         },
       ]}>
       <View
         style={[
           styles.number,
-          { backgroundColor: learned ? theme.tint : active ? theme.tintSoft : theme.background },
+          {
+            backgroundColor:
+              (selecting && checked) || learned
+                ? theme.tint
+                : active && !selecting
+                  ? theme.tintSoft
+                  : theme.background,
+          },
         ]}>
-        {learned ? (
+        {selecting && selectable ? (
+          checked ? (
+            <Ionicons name="checkmark" size={20} color="#ffffff" />
+          ) : (
+            <View style={[styles.checkbox, { borderColor: theme.backgroundSelected }]} />
+          )
+        ) : learned ? (
           <Ionicons name="checkmark" size={18} color="#ffffff" />
         ) : (
           <ThemedText style={[styles.numberText, active && { color: theme.tint }]}>{chapter.id}</ThemedText>
@@ -126,6 +159,14 @@ export default function LibraryScreen() {
   const [started, setStarted] = useState<Map<number, number>>(new Map());
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const refresh = () => {
+    setMemorized(getMemorizedCountBySurah());
+    setStarted(getStartedCountBySurah());
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -133,6 +174,41 @@ export default function LibraryScreen() {
       setStarted(getStartedCountBySurah());
     }, []),
   );
+
+  const toggle = (id: number) => {
+    void Haptics.selectionAsync();
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelected(next);
+  };
+
+  const exitSelecting = () => {
+    setSelecting(false);
+    setSelected(new Set());
+  };
+
+  const confirmKnown = () => {
+    const ids = [...selected];
+    const verses = countUnstartedVerses(ids);
+    Alert.alert(
+      t('known.confirmTitle', { count: ids.length }),
+      t('known.confirmBody', { count: verses }),
+      [
+        { text: t('auth.cancel'), style: 'cancel' },
+        {
+          text: t('known.confirmCta'),
+          onPress: () => {
+            const added = markSurahsKnown(ids);
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            refresh();
+            exitSelecting();
+            setNotice(t('known.done', { count: ids.length, verses: added }));
+          },
+        },
+      ],
+    );
+  };
 
   const isFr = i18n.language === 'fr';
   const q = normalize(query);
@@ -157,12 +233,52 @@ export default function LibraryScreen() {
 
   const header = (
     <View style={styles.headerBlock}>
-      <View>
-        <ThemedText style={styles.title}>{t('library.title')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {t('library.subtitle', { count: inProgress })}
-        </ThemedText>
+      <View style={styles.titleRow}>
+        <View style={styles.flex}>
+          <ThemedText style={styles.title}>{t('library.title')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('library.subtitle', { count: inProgress })}
+          </ThemedText>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setNotice(null);
+            if (selecting) exitSelecting();
+            else setSelecting(true);
+          }}
+          style={({ pressed }) => [
+            styles.knownToggle,
+            {
+              backgroundColor: selecting ? theme.backgroundElement : theme.tintSoft,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
+            },
+          ]}>
+          <Ionicons
+            name={selecting ? 'close' : 'checkmark-done'}
+            size={15}
+            color={selecting ? theme.text : theme.tint}
+          />
+          <ThemedText style={[styles.knownToggleText, { color: selecting ? theme.text : theme.tint }]}>
+            {selecting ? t('auth.cancel') : t('known.toggle')}
+          </ThemedText>
+        </Pressable>
       </View>
+      {selecting ? (
+        <View style={[styles.banner, { backgroundColor: theme.tintSoft }]}>
+          <Ionicons name="information-circle" size={18} color={theme.tint} />
+          <ThemedText type="small" style={[styles.flex, { color: theme.tint }]}>
+            {t('known.banner')}
+          </ThemedText>
+        </View>
+      ) : notice ? (
+        <View style={[styles.banner, { backgroundColor: theme.tintSoft }]}>
+          <Ionicons name="checkmark-circle" size={18} color={theme.tint} />
+          <ThemedText type="small" style={[styles.flex, { color: theme.tint }]}>
+            {notice}
+          </ThemedText>
+        </View>
+      ) : null}
       <View style={[styles.search, { backgroundColor: theme.backgroundElement }]}>
         <Ionicons name="search" size={18} color={theme.textSecondary} />
         <TextInput
@@ -223,6 +339,9 @@ export default function LibraryScreen() {
               memorized={memorized.get(item.id) ?? 0}
               locked={!isFreeSurah(item.id) && !isPremium}
               active={item.id === activeSurah}
+              selecting={selecting}
+              checked={selected.has(item.id)}
+              onToggle={() => toggle(item.id)}
             />
           )}
           ListEmptyComponent={
@@ -236,6 +355,20 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
+        {selecting ? (
+          <View
+            style={[
+              styles.selectBar,
+              { backgroundColor: theme.background, borderTopColor: theme.backgroundSelected },
+            ]}>
+            <PrimaryButton
+              label={t('known.validate', { count: selected.size })}
+              icon="checkmark-done"
+              disabled={selected.size === 0}
+              onPress={confirmKnown}
+            />
+          </View>
+        ) : null}
       </SafeAreaView>
     </ThemedView>
   );
@@ -246,6 +379,30 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, maxWidth: MaxContentWidth },
   list: { gap: Spacing.two, paddingHorizontal: Spacing.three, paddingBottom: Spacing.five },
   headerBlock: { gap: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.one },
+  flex: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  knownToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  knownToggleText: { fontSize: 13, lineHeight: 17, fontWeight: 700 },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+    borderRadius: 16,
+    padding: Spacing.three,
+  },
+  checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2 },
+  selectBar: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   title: { fontSize: 28, lineHeight: 34, fontWeight: 800, letterSpacing: -0.4 },
   search: {
     flexDirection: 'row',

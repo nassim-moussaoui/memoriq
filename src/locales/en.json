@@ -41,7 +41,17 @@
     "surahProgress": "{{memorized}} learned · {{started}} started of {{total}}",
     "weekCount_one": "{{count}}/7 day",
     "weekCount_other": "{{count}}/7 days",
-    "exploreDesc": "All 114 surahs, to read and listen to"
+    "exploreDesc": "All 114 surahs, to read and listen to",
+    "capTitle": "Today's goal reached",
+    "capBody_one": "You learned your new verse for today. To let it settle, the rest of {{surah}} comes tomorrow.",
+    "capBody_other": "You learned your {{count}} new verses for today. To let them settle, the rest of {{surah}} comes tomorrow.",
+    "capNote": "Sleep consolidates what you just learned: a little every day beats a lot at once.",
+    "capInHero": "Today's new verses are done: the rest of {{surah}} comes tomorrow.",
+    "learnMore": "Learn a few more verses",
+    "surahFinishedTitle": "Surah complete!",
+    "surahFinishedBody": "You learned every verse of {{surah}}. Its reviews keep going on their own: pick your next surah.",
+    "pickNext": "Pick the next surah",
+    "allDoneBody": "Come back tomorrow for your next session."
   },
   "library": {
     "title": "Surahs",
@@ -367,5 +377,26 @@
     "invalidTitle": "Link expired or invalid",
     "invalidBody": "Request a new link from your profile: it is only valid for a short time.",
     "backToProfile": "Go to profile"
+  },
+  "switch": {
+    "title": "One surah at a time",
+    "body": "You are learning {{from}} ({{started}}/{{total}} verses started). Learning several surahs in parallel scatters memory: the traditional method is to finish one surah before starting another.\n\nIf you switch anyway, the reviews of {{from}} will keep coming automatically.",
+    "stay": "Stay on {{surah}}",
+    "go": "Switch to {{surah}}"
+  },
+  "known": {
+    "toggle": "Already known",
+    "banner": "Tick the surahs you already know by heart. They go straight to review, with no learning step, and Memoriq will check now and then that they stay solid.",
+    "validate_one": "Confirm {{count}} surah",
+    "validate_other": "Confirm {{count}} surahs",
+    "confirmTitle_one": "Mark this surah as known?",
+    "confirmTitle_other": "Mark {{count}} surahs as known?",
+    "confirmBody_one": "{{count}} verse will go to review. The first check comes in 7 to 45 days, spread out so it never piles up.",
+    "confirmBody_other": "{{count}} verses will go to review. The first check comes in 7 to 45 days, spread out so it never piles up.",
+    "confirmCta": "Confirm",
+    "done_one": "{{count}} surah added to what you know ({{verses}} verses).",
+    "done_other": "{{count}} surahs added to what you know ({{verses}} verses).",
+    "readerTitle": "I already know this surah",
+    "readerDesc": "Send it straight to review"
   }
 }
