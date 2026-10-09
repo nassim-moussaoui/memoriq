@@ -15,7 +15,7 @@ const RATES = [0.75, 1, 1.25] as const;
  * work on a hard verse, so the control lives next to the play buttons rather
  * than buried in settings.
  */
-export function SpeedPill() {
+export function SpeedPill({ surface }: { surface?: string } = {}) {
   const { t } = useTranslation();
   const theme = useTheme();
   const playbackRate = useAppStore((s) => s.playbackRate);
@@ -36,7 +36,7 @@ export function SpeedPill() {
       style={({ pressed }) => [
         styles.pill,
         {
-          backgroundColor: slowed ? theme.tintSoft : theme.backgroundElement,
+          backgroundColor: slowed ? theme.tintSoft : (surface ?? theme.backgroundElement),
           transform: [{ scale: pressed ? 0.96 : 1 }],
         },
       ]}>

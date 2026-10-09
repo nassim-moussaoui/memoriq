@@ -1,103 +1,157 @@
-import { BlurView } from 'expo-blur';
-import { Pressable, StyleSheet, Text, View, type TextStyle } from 'react-native';
+import { useEffect } from 'react';
+import { Pressable, StyleSheet, View, type TextStyle } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * Active recall by word-by-word reveal: the verse is visibly written but
- * blurred, and tapping a word (Arabic or phonetic) sharpens it. The blur is a
- * real native Gaussian blur: the word is rendered normally and an expo-blur
- * BlurView (frosted glass) sits on top of it until it is revealed.
+ * Active recall by word-by-word reveal. A hidden word is drawn as a soft
+ * pill the exact size of the word (so the shape of the verse stays readable),
+ * gently breathing in a wave across the line. Tapping it fades the pill out
+ * while the word rises into place. Revealing everything animates the same way,
+ * so there is never a jump between the masked and the full verse.
  */
 
 export function splitWords(text: string): string[] {
   return text.trim().split(/\s+/);
 }
 
-function BlurredWord({
+type Revealed = ReadonlySet<number> | 'all';
+
+/** Looping 0 → 1 clock shared by every pill of a line (only while needed). */
+function useWave(active: boolean): SharedValue<number> {
+  const reduceMotion = useReducedMotion();
+  const wave = useSharedValue(0);
+  useEffect(() => {
+    if (active && !reduceMotion) {
+      wave.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.linear }), -1, false);
+    } else {
+      cancelAnimation(wave);
+    }
+  }, [active, reduceMotion, wave]);
+  return wave;
+}
+
+function MaskedWord({
   word,
+  index,
+  revealed,
+  wave,
   textStyle,
-  intensity,
+  pillColor,
+  pillInset,
   onPress,
 }: {
   word: string;
+  index: number;
+  revealed: boolean;
+  wave: SharedValue<number>;
   textStyle: TextStyle | TextStyle[];
-  intensity: number;
+  pillColor: string;
+  /** Vertical inset of the pill, so it hugs the glyphs rather than the line box. */
+  pillInset: number;
   onPress?: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
+  const shown = useSharedValue(revealed ? 1 : 0);
+  useEffect(() => {
+    const target = revealed ? 1 : 0;
+    shown.value = reduceMotion
+      ? target
+      : revealed
+        ? withSpring(target, { damping: 16, stiffness: 170 })
+        : withTiming(target, { duration: 200 });
+  }, [reduceMotion, revealed, shown]);
+
+  const wordStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(shown.value, [0, 0.4, 1], [0, 0.4, 1]),
+    transform: [{ translateY: (1 - shown.value) * 6 }],
+  }));
+  const pillStyle = useAnimatedStyle(() => {
+    const breath = 0.5 + 0.5 * Math.sin((wave.value - index * 0.09) * Math.PI * 2);
+    return {
+      opacity: (1 - shown.value) * (0.7 + 0.3 * breath),
+      transform: [{ scaleX: 1 - shown.value * 0.25 }, { scaleY: 1 - shown.value * 0.4 }],
+    };
+  });
+
   return (
-    <Pressable onPress={onPress} disabled={!onPress} hitSlop={6}>
-      <View style={styles.blurWrap}>
-        <Text style={textStyle}>{word}</Text>
-        <BlurView
-          intensity={intensity}
-          tint="default"
-          blurMethod="dimezisBlurView"
-          style={StyleSheet.absoluteFill}
+    <Pressable
+      onPress={onPress}
+      disabled={revealed || !onPress}
+      hitSlop={6}
+      accessibilityRole={revealed ? 'text' : 'button'}>
+      <View>
+        <Animated.Text style={[textStyle, wordStyle]}>{word}</Animated.Text>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.pill,
+            { top: pillInset, bottom: pillInset, backgroundColor: pillColor },
+            pillStyle,
+          ]}
         />
       </View>
     </Pressable>
   );
 }
 
-/**
- * The Arabic verse. Fully revealed it flows as one centered RTL text; during
- * recall each word is laid out separately (row-reverse wrap) so hidden words
- * can be blurred and tapped individually.
- */
-export function BlurredArabicVerse({
+function isShown(revealed: Revealed, i: number) {
+  return revealed === 'all' || revealed.has(i);
+}
+
+/** The Arabic verse, right to left, each word maskable. */
+export function MaskedArabicVerse({
   text,
   revealed,
   onReveal,
   fontScale = 1,
 }: {
   text: string;
-  revealed: ReadonlySet<number> | 'all';
+  revealed: Revealed;
   onReveal?: (index: number) => void;
   fontScale?: number;
 }) {
   const theme = useTheme();
-  if (revealed === 'all') {
-    return (
-      <Text
-        style={[
-          styles.arabicFlow,
-          { fontSize: 28 * fontScale, lineHeight: 52 * fontScale, color: theme.text },
-        ]}>
-        {text}
-      </Text>
-    );
-  }
   const words = splitWords(text);
-  const wordStyle: TextStyle = {
-    fontSize: 28 * fontScale,
-    lineHeight: 40 * fontScale,
-    color: theme.text,
-  };
+  const wave = useWave(revealed !== 'all');
+  const fontSize = 28 * fontScale;
+  // About 1.8x the font size, the comfortable line height for Uthmani script.
+  const lineHeight = Math.round(fontSize * 1.8);
+  const wordStyle: TextStyle = { fontSize, lineHeight, color: theme.text };
   return (
     <View style={styles.arabicGrid}>
-      {words.map((word, i) =>
-        revealed.has(i) ? (
-          <Text key={`${i}-${word}`} style={[styles.arabicWord, wordStyle]}>
-            {word}
-          </Text>
-        ) : (
-          <BlurredWord
-            key={`${i}-${word}`}
-            word={word}
-            textStyle={[styles.arabicWord, wordStyle]}
-            intensity={40}
-            onPress={onReveal ? () => onReveal(i) : undefined}
-          />
-        ),
-      )}
+      {words.map((word, i) => (
+        <MaskedWord
+          key={`${i}-${word}`}
+          word={word}
+          index={i}
+          revealed={isShown(revealed, i)}
+          wave={wave}
+          textStyle={[styles.arabicWord, wordStyle]}
+          pillColor={theme.backgroundSelected}
+          pillInset={lineHeight * 0.24}
+          onPress={onReveal ? () => onReveal(i) : undefined}
+        />
+      ))}
     </View>
   );
 }
 
 /**
  * The phonetic line under the verse. Same reveal state as the Arabic; during
- * recall the words just revealed are tinted so the learner sees their progress.
+ * recall the words already revealed are tinted so the learner sees progress.
  */
 export function PhoneticLine({
   text,
@@ -105,77 +159,61 @@ export function PhoneticLine({
   onReveal,
 }: {
   text: string;
-  revealed: ReadonlySet<number> | 'all';
+  revealed: Revealed;
   onReveal?: (index: number) => void;
 }) {
   const theme = useTheme();
-  if (revealed === 'all') {
-    return (
-      <Text style={[styles.phoneticFlow, { color: theme.textSecondary }]}>{text}</Text>
-    );
-  }
   const words = splitWords(text);
+  const wave = useWave(revealed !== 'all');
   return (
     <View style={styles.phoneticGrid}>
-      {words.map((word, i) =>
-        revealed.has(i) ? (
-          <Text key={`${i}-${word}`} style={[styles.phoneticWord, { color: theme.tint }]}>
-            {word}
-          </Text>
-        ) : (
-          <BlurredWord
-            key={`${i}-${word}`}
-            word={word}
-            textStyle={[styles.phoneticWord, { color: theme.textSecondary }]}
-            intensity={35}
-            onPress={onReveal ? () => onReveal(i) : undefined}
-          />
-        ),
-      )}
+      {words.map((word, i) => (
+        <MaskedWord
+          key={`${i}-${word}`}
+          word={word}
+          index={i}
+          revealed={isShown(revealed, i)}
+          wave={wave}
+          textStyle={[
+            styles.phoneticWord,
+            { color: revealed === 'all' ? theme.textSecondary : theme.tint },
+          ]}
+          pillColor={theme.backgroundSelected}
+          pillInset={3}
+          onPress={onReveal ? () => onReveal(i) : undefined}
+        />
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  arabicFlow: {
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
   arabicGrid: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    alignItems: 'baseline',
-    columnGap: 12,
-    rowGap: 6,
+    alignItems: 'center',
+    columnGap: 10,
   },
-  arabicWord: {
-    writingDirection: 'rtl',
-  },
-  phoneticFlow: {
-    textAlign: 'center',
-    fontSize: 15,
-    lineHeight: 26,
-    fontStyle: 'italic',
-    fontWeight: 500,
-  },
+  arabicWord: { writingDirection: 'rtl' },
   phoneticGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    alignItems: 'baseline',
-    columnGap: 8,
-    rowGap: 4,
+    alignItems: 'center',
+    columnGap: 7,
+    rowGap: 2,
   },
   phoneticWord: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 24,
     fontStyle: 'italic',
     fontWeight: 500,
   },
-  blurWrap: {
-    overflow: 'hidden',
-    borderRadius: 8,
-    paddingHorizontal: 2,
+  pill: {
+    position: 'absolute',
+    left: -2,
+    right: -2,
+    borderRadius: 999,
   },
 });

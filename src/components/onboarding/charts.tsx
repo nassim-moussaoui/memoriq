@@ -5,6 +5,7 @@ import Animated, {
   Extrapolation,
   interpolate,
   useAnimatedProps,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withDelay,
@@ -22,6 +23,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
+import { AnimatedCounter } from '@/components/onboarding/primitives';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -31,12 +33,13 @@ import { useTheme } from '@/hooks/use-theme';
  * (theme.tint) for the story series, de-emphasized gray for the comparison
  * (identity also carried by stroke weight + legend, never color alone), 2px
  * lines, hairline solid grid, selective direct labels, text in text tokens.
- * Charts draw themselves each time `active` flips to true.
+ * Charts draw themselves on mount (or when `active` flips to true).
  */
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedG = Animated.createAnimatedComponent(G);
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 const H = 200;
 const PAD = { top: 18, right: 18, bottom: 30, left: 44 };
@@ -235,62 +238,144 @@ function Frame({
   );
 }
 
+const FORGET_STABILITY = 6;
+
 /**
- * Slide 1: the Ebbinghaus forgetting curve draws itself down, the area wash
- * fades in, and a dot marks where memory crosses the 50% gridline.
+ * Step "forgetting": the Ebbinghaus curve draws itself down while a dot rides
+ * the tip of the pen. Above the chart, the day and the memory still retained
+ * count live with the dot, so the drop is felt, not just seen.
  */
 export function ForgettingCurveChart({
-  active,
   width,
   xLabel,
+  dayPrefix,
+  memoryLabel,
+  halfLabel,
 }: {
-  active: boolean;
   width: number;
   xLabel: string;
+  dayPrefix: string;
+  memoryLabel: string;
+  halfLabel: string;
 }) {
   const theme = useTheme();
-  const progress = useChartProgress(active, 1800);
+  const progress = useChartProgress(true, 2600);
   const plotW = width - PAD.left - PAD.right;
   const xOf = (day: number) => PAD.left + (day / MAX_DAY) * plotW;
 
-  const pts = decayPoints(xOf, 0, MAX_DAY, 6);
+  const pts = decayPoints(xOf, 0, MAX_DAY, FORGET_STABILITY);
   const { d, length, cum } = polyline(pts);
   const areaD = `${d} L${xOf(MAX_DAY).toFixed(1)},${yScale(0)} L${xOf(0).toFixed(1)},${yScale(0)} Z`;
+  const xs = pts.map((p) => p.x);
+  const ys = pts.map((p) => p.y);
 
-  const DRAW: Window = [0, 0.9];
+  const DRAW: Window = [0, 0.92];
+  const halfDay = FORGET_STABILITY * Math.LN2;
   // Fraction of the arc length where the curve crosses the 50% gridline.
   const halfIndex = Math.max(pts.findIndex((p) => p.y >= yScale(0.5)), 0);
   const halfAt = (cum[halfIndex] / length) * DRAW[1];
 
+  // Position of the pen tip, found by walking the arc length (UI thread).
+  const tip = useDerivedValue(() => {
+    const t = interpolate(progress.value, [DRAW[0], DRAW[1]], [0, 1], Extrapolation.CLAMP);
+    const target = t * length;
+    let i = 0;
+    while (i < cum.length - 2 && cum[i + 1] < target) i++;
+    const span = cum[i + 1] - cum[i];
+    const f = span > 0 ? Math.min(Math.max((target - cum[i]) / span, 0), 1) : 0;
+    const x = xs[i] + (xs[i + 1] - xs[i]) * f;
+    const y = ys[i] + (ys[i + 1] - ys[i]) * f;
+    const day = ((x - PAD.left) / plotW) * MAX_DAY;
+    return { x, y, day, retention: Math.exp(-day / FORGET_STABILITY) };
+  });
+  const dayValue = useDerivedValue(() => tip.value.day);
+  const percentValue = useDerivedValue(() => tip.value.retention * 100);
+
+  const tipProps = useAnimatedProps(() => ({
+    cx: tip.value.x,
+    cy: tip.value.y,
+    opacity: progress.value > 0 ? 1 : 0,
+  }));
+  const haloProps = useAnimatedProps(() => ({
+    cx: tip.value.x,
+    cy: tip.value.y,
+    opacity: progress.value > 0 ? 0.25 : 0,
+  }));
+  const guideProps = useAnimatedProps(() => ({
+    x1: tip.value.x,
+    x2: tip.value.x,
+    y1: tip.value.y,
+    opacity: progress.value > 0 ? 1 : 0,
+  }));
+
   return (
-    <Frame width={width} xLabel={xLabel}>
-      <Defs>
-        <LinearGradient id="forgetFill" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={theme.tint} stopOpacity={0.16} />
-          <Stop offset="1" stopColor={theme.tint} stopOpacity={0.01} />
-        </LinearGradient>
-      </Defs>
-      <FadeG progress={progress} at={0.5}>
-        <Path d={areaD} fill="url(#forgetFill)" />
-      </FadeG>
-      <DrawnPath progress={progress} window={DRAW} d={d} length={length} color={theme.tint} />
-      <PopDot
-        progress={progress}
-        at={halfAt}
-        cx={xOf(6 * Math.LN2)}
-        cy={yScale(0.5)}
-        color={theme.tint}
-        surface={theme.background}
-      />
-      <PopDot
-        progress={progress}
-        at={DRAW[1]}
-        cx={pts[pts.length - 1].x}
-        cy={pts[pts.length - 1].y}
-        color={theme.tint}
-        surface={theme.background}
-      />
-    </Frame>
+    <View style={styles.chartWrap}>
+      <View style={styles.readout}>
+        <AnimatedCounter
+          value={percentValue}
+          suffix=" %"
+          style={[styles.bigNumber, { color: theme.tint }]}
+        />
+        <View style={styles.readoutSide}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {memoryLabel}
+          </ThemedText>
+          <AnimatedCounter value={dayValue} prefix={dayPrefix} style={styles.dayNumber} />
+        </View>
+      </View>
+      <Frame width={width} xLabel={xLabel}>
+        <Defs>
+          <LinearGradient id="forgetFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={theme.tint} stopOpacity={0.2} />
+            <Stop offset="1" stopColor={theme.tint} stopOpacity={0.01} />
+          </LinearGradient>
+        </Defs>
+        <FadeG progress={progress} at={0.35}>
+          <Path d={areaD} fill="url(#forgetFill)" />
+        </FadeG>
+        <AnimatedLine
+          y2={yScale(0)}
+          stroke={theme.tint}
+          strokeWidth={1}
+          strokeDasharray={[3, 4]}
+          animatedProps={guideProps}
+        />
+        <DrawnPath
+          progress={progress}
+          window={DRAW}
+          d={d}
+          length={length}
+          color={theme.tint}
+          strokeWidth={2.5}
+        />
+        <PopDot
+          progress={progress}
+          at={halfAt}
+          cx={xOf(halfDay)}
+          cy={yScale(0.5)}
+          color={theme.tint}
+          surface={theme.background}
+        />
+        <FadeG progress={progress} at={halfAt + 0.04}>
+          <SvgText
+            x={xOf(halfDay) + 9}
+            y={yScale(0.5) - 8}
+            fontSize={11}
+            fontWeight="600"
+            fill={theme.text}>
+            {halfLabel}
+          </SvgText>
+        </FadeG>
+        <AnimatedCircle r={11} fill={theme.tint} animatedProps={haloProps} />
+        <AnimatedCircle
+          r={5.5}
+          fill={theme.tint}
+          stroke={theme.background}
+          strokeWidth={2}
+          animatedProps={tipProps}
+        />
+      </Frame>
+    </View>
   );
 }
 
@@ -300,16 +385,17 @@ export function ForgettingCurveChart({
  * and every following decay is flatter than the last.
  */
 export function SpacedRepetitionChart({
-  active,
   width,
   xLabel,
+  dayShort,
 }: {
-  active: boolean;
   width: number;
   xLabel: string;
+  /** Prefix of the review markers ("J" gives "J3"). */
+  dayShort: string;
 }) {
   const theme = useTheme();
-  const progress = useChartProgress(active, 2600);
+  const progress = useChartProgress(true, 3200);
   const plotW = width - PAD.left - PAD.right;
   const xOf = (day: number) => PAD.left + (day / MAX_DAY) * plotW;
 
@@ -331,6 +417,8 @@ export function SpacedRepetitionChart({
     pts.push(...decayPoints(xOf, r.day, end, r.stability));
   });
   const main = polyline(pts);
+  const last = reviews[reviews.length - 1];
+  const endRetention = Math.exp(-(MAX_DAY - last.day) / last.stability);
   const MAIN: Window = [0.26, 0.96];
   const peakAt = (k: number) =>
     MAIN[0] + (main.cum[peakIndices[k]] / main.length) * (MAIN[1] - MAIN[0]);
@@ -354,16 +442,50 @@ export function SpacedRepetitionChart({
         strokeWidth={2.5}
       />
       {reviews.slice(1).map((r, k) => (
-        <PopDot
-          key={r.day}
-          progress={progress}
-          at={peakAt(k)}
-          cx={xOf(r.day)}
-          cy={yScale(1)}
-          color={theme.tint}
-          surface={theme.background}
-        />
+        <G key={r.day}>
+          <PopDot
+            progress={progress}
+            at={peakAt(k)}
+            cx={xOf(r.day)}
+            cy={yScale(1)}
+            color={theme.tint}
+            surface={theme.background}
+          />
+          <FadeG progress={progress} at={peakAt(k)}>
+            <SvgText
+              x={xOf(r.day)}
+              y={yScale(1) - 9}
+              fontSize={10.5}
+              fontWeight="700"
+              fill={theme.tint}
+              textAnchor="middle">
+              {`${dayShort}${r.day}`}
+            </SvgText>
+          </FadeG>
+        </G>
       ))}
+      <FadeG progress={progress} at={0.2}>
+        <SvgText
+          x={xOf(MAX_DAY) - 2}
+          y={yScale(0) - 7}
+          fontSize={11}
+          fontWeight="600"
+          fill={theme.textSecondary}
+          textAnchor="end">
+          {`${Math.round(Math.exp(-MAX_DAY / 6) * 100)} %`}
+        </SvgText>
+      </FadeG>
+      <FadeG progress={progress} at={0.94}>
+        <SvgText
+          x={xOf(MAX_DAY) - 2}
+          y={yScale(endRetention) + 18}
+          fontSize={13}
+          fontWeight="800"
+          fill={theme.tint}
+          textAnchor="end">
+          {`${Math.round(endRetention * 100)} %`}
+        </SvgText>
+      </FadeG>
     </Frame>
   );
 }
@@ -494,6 +616,16 @@ export function ChartLegend({
 }
 
 const styles = StyleSheet.create({
+  chartWrap: { alignItems: 'stretch', gap: Spacing.two },
+  readout: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.two,
+  },
+  bigNumber: { fontSize: 44, lineHeight: 50, fontWeight: 800, minWidth: 120 },
+  readoutSide: { flex: 1, paddingBottom: 6 },
+  dayNumber: { fontSize: 17, lineHeight: 22, fontWeight: 700 },
   legendRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

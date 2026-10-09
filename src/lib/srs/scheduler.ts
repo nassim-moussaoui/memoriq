@@ -19,6 +19,12 @@ const engine = fsrs(
     // Target 90% recall probability: the FSRS default, well suited to
     // verbatim memorization where accuracy matters.
     request_retention: 0.9,
+    // No minute-level learning steps: a verse is never "due again in 10 min"
+    // outside the session. The session itself handles short-term repetition
+    // (listen, recite, and an immediate retry after "Again"), so every
+    // stored interval is at least a day and reads naturally ("tomorrow").
+    learning_steps: [],
+    relearning_steps: [],
   })
 );
 

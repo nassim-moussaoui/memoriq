@@ -1,16 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Celebration } from '@/components/celebration';
-import { BlurredArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
-import { SpeedPill } from '@/components/speed-pill';
+import { FlowProgress } from '@/components/onboarding/primitives';
+import { MaskedArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
+import { ListenPanel } from '@/components/session/listen-panel';
+import { RatingGrid } from '@/components/session/rating-grid';
+import { SessionSummary } from '@/components/session/session-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   DEFAULT_REMINDER_TIMES,
@@ -29,7 +32,54 @@ import { syncNow } from '@/lib/sync';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
 import { useTheme } from '@/hooks/use-theme';
 
-type Phase = 'listen' | 'recall';
+/**
+ * The learning loop. A new verse goes listen → recite → evaluate; a review
+ * goes straight to recite → evaluate. "Forgot" retries the verse at the end
+ * of the session (in-session relearning).
+ */
+type Phase = 'listen' | 'recall' | 'rate';
+type Result = { kind: SessionItem['kind']; firstGrade: Grade };
+
+const itemKey = (item: SessionItem) => `${item.surah}:${item.ayah}`;
+
+function StepTrack({ steps, current }: { steps: string[]; current: number }) {
+  const theme = useTheme();
+  return (
+    <View style={styles.stepTrack}>
+      {steps.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        const color = active ? theme.tint : done ? theme.text : theme.textSecondary;
+        return (
+          <View key={label} style={styles.stepItem}>
+            <View
+              style={[
+                styles.stepDot,
+                {
+                  backgroundColor: active || done ? theme.tint : 'transparent',
+                  borderColor: active || done ? theme.tint : theme.backgroundSelected,
+                },
+              ]}>
+              {done ? (
+                <Ionicons name="checkmark" size={10} color="#ffffff" />
+              ) : (
+                <ThemedText style={[styles.stepNum, { color: active ? '#ffffff' : theme.textSecondary }]}>
+                  {i + 1}
+                </ThemedText>
+              )}
+            </View>
+            <ThemedText style={[styles.stepLabel, { color, fontWeight: active ? 700 : 500 }]}>
+              {label}
+            </ThemedText>
+            {i < steps.length - 1 ? (
+              <View style={[styles.stepLine, { backgroundColor: done ? theme.tint : theme.backgroundSelected }]} />
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function SessionScreen() {
   const { t, i18n } = useTranslation();
@@ -48,8 +98,8 @@ export default function SessionScreen() {
   // "ahead" mode is the voluntary extra session offered when nothing is due.
   const { mode } = useLocalSearchParams<{ mode?: string }>();
 
-  // The queue is frozen at mount; "Again" ratings re-append the item so it is
-  // retried before the session ends (in-session relearning).
+  // The queue is frozen at mount; "Again" re-appends the item so it is
+  // retried before the session ends.
   const initialQueue = useMemo(() => {
     const plan =
       mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah, minutesPerDay);
@@ -59,27 +109,41 @@ export default function SessionScreen() {
   const [queue, setQueue] = useState<SessionItem[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() =>
-    initialQueue[0]?.kind === 'new' ? 'listen' : 'recall'
+    initialQueue[0]?.kind === 'new' ? 'listen' : 'recall',
   );
   const [revealedWords, setRevealedWords] = useState<ReadonlySet<number>>(new Set());
-  const [revealed, setRevealed] = useState(false);
+  const [listens, setListens] = useState(0);
   const [loop, setLoop] = useState(true);
   const loopRef = useRef(true);
-  const [doneCounts, setDoneCounts] = useState({ new: 0, reviews: 0 });
+  const [results, setResults] = useState<Record<string, Result>>({});
+
+  const item = queue[index];
+  const finished = index >= queue.length;
+  // A retry of a verse forgotten earlier in this session.
+  const isRetry = !!item && itemKey(item) in results;
 
   const onAyahFinishedRef = useRef<(played: PlayingAyah) => void>(() => {});
   const { play, stop, playing } = useAyahAudio((played) => onAyahFinishedRef.current(played));
 
   useEffect(() => {
     onAyahFinishedRef.current = (played) => {
-      if (loopRef.current && phase === 'listen') {
-        play(played.surah, played.ayah);
+      if (phase !== 'listen' || !item || played.ayah !== item.ayah || played.surah !== item.surah) {
+        return;
       }
+      setListens((n) => n + 1);
+      if (loopRef.current) play(played.surah, played.ayah);
     };
   });
 
-  const item = queue[index];
-  const finished = index >= queue.length;
+  // Each new verse starts playing on its own when its listen stage opens.
+  const autoplay = useEffectEvent(() => {
+    if (phase === 'listen' && item) play(item.surah, item.ayah);
+  });
+  useEffect(() => {
+    if (phase !== 'listen') return;
+    const timer = setTimeout(autoplay, 450);
+    return () => clearTimeout(timer);
+  }, [index, phase]);
 
   // Snapshot of what is left once the session ends: read once, after
   // registerSessionDone has already run.
@@ -92,13 +156,13 @@ export default function SessionScreen() {
     };
   }, [finished, i18n.language]);
 
-  // Interval preview for the rating buttons. Memoized: FSRS fuzz would make
+  // Interval preview for the rating cards. Memoized: FSRS fuzz would make
   // the values jitter on every re-render otherwise.
   const previews = useMemo(() => {
-    if (!item || !revealed) return null;
+    if (!item || phase !== 'rate') return null;
     const card = getItem(item.surah, item.ayah)?.card ?? newCard();
     return previewIntervals(card);
-  }, [item, revealed]);
+  }, [item, phase]);
 
   useEffect(() => {
     if (finished) {
@@ -121,118 +185,33 @@ export default function SessionScreen() {
     await scheduleDailyReminder(time);
   };
 
-  const advance = (nextQueue: SessionItem[]) => {
+  const close = () => {
     stop();
-    const nextIndex = index + 1;
-    setIndex(nextIndex);
-    setRevealed(false);
-    setRevealedWords(new Set());
-    const next = nextQueue[nextIndex];
-    if (next) {
-      setPhase(next.kind === 'new' ? 'listen' : 'recall');
-    } else {
-      registerSessionDone();
-    }
-  };
-
-  const onRate = (rating: Grade) => {
-    const existing = getItem(item.surah, item.ayah);
-    const card = existing?.card ?? newCard();
-    const updated = rate(card, rating);
-    saveItem(item.surah, item.ayah, updated);
-    logReview(item.surah, item.ayah, rating);
-
-    setDoneCounts((c) =>
-      item.kind === 'new' ? { ...c, new: c.new + 1 } : { ...c, reviews: c.reviews + 1 }
-    );
-
-    let nextQueue = queue;
-    if (rating === Rating.Again) {
-      nextQueue = [...queue, { ...item, kind: 'review' as const }];
-      setQueue(nextQueue);
-    }
-    advance(nextQueue);
-  };
-
-  const toggleLoop = () => {
-    loopRef.current = !loopRef.current;
-    setLoop(loopRef.current);
-  };
-
-  const formatInterval = (mins: number) => {
-    if (mins < 60) return t('session.intMinutes', { count: mins });
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return t('session.intHours', { count: hours });
-    const days = Math.round(hours / 24);
-    if (days < 30) return t('session.intDays', { count: days });
-    return t('session.intMonths', { count: Math.round(days / 30) });
+    router.back();
   };
 
   if (finished || !item) {
+    const all = Object.values(results);
+    const firstTry = all.filter((r) => r.firstGrade !== Rating.Again).length;
+    const nextDue = doneStats?.nextDue;
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={[styles.safeArea, styles.doneContainer]}>
-          <Celebration />
-          <ThemedText type="subtitle" style={styles.center}>
-            {t('session.done')}
-          </ThemedText>
-          {streak > 0 && (
-            <View style={[styles.streakChip, { backgroundColor: theme.tintSoft }]}>
-              <Ionicons name="flame" size={16} color={theme.tint} />
-              <ThemedText type="smallBold" style={{ color: theme.tint }}>
-                {t('session.streakDay', { count: streak })}
-              </ThemedText>
-            </View>
-          )}
-          <ThemedText type="default" themeColor="textSecondary" style={styles.center}>
-            {t('session.doneSummary', {
-              new: doneCounts.new,
-              reviews: doneCounts.reviews,
-            })}
-          </ThemedText>
-          {doneStats?.nextDue && (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              {t(nextDueKey(doneStats.nextDue.kind), {
-                time: doneStats.nextDue.value,
-                date: doneStats.nextDue.value,
-              })}
-            </ThemedText>
-          )}
-          {doneStats && doneStats.remainingDue > 0 && (
-            <Pressable
-              style={[styles.reminderCard, { backgroundColor: theme.backgroundElement }]}
-              onPress={() => router.replace('/session')}>
-              <Ionicons name="refresh-outline" size={18} color={theme.info} />
-              <ThemedText type="smallBold" style={{ flex: 1 }}>
-                {t('session.moreWaiting', { count: doneStats.remainingDue })}
-              </ThemedText>
-              <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-            </Pressable>
-          )}
-          <ThemedView type="backgroundElement" style={styles.scienceCard}>
-            <Ionicons name="school-outline" size={18} color={theme.tint} />
-            <ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>
-              {t('session.doneScience')}
-            </ThemedText>
-          </ThemedView>
-          {!remindersEnabled && (
-            <Pressable
-              style={[styles.reminderCard, { backgroundColor: theme.tintSoft }]}
-              onPress={() => void enableReminders()}>
-              <Ionicons name="notifications-outline" size={18} color={theme.tint} />
-              <ThemedText type="smallBold" style={{ flex: 1, color: theme.tint }}>
-                {t('notif.optIn', { time: DEFAULT_REMINDER_TIMES[reviewMoment] })}
-              </ThemedText>
-              <Ionicons name="chevron-forward" size={16} color={theme.tint} />
-            </Pressable>
-          )}
-          <Pressable
-            style={[styles.primaryButton, { backgroundColor: theme.tint }]}
-            onPress={() => router.back()}>
-            <ThemedText type="default" style={styles.primaryButtonText}>
-              {t('session.backHome')}
-            </ThemedText>
-          </Pressable>
+        <SafeAreaView style={styles.safeArea}>
+          <SessionSummary
+            empty={all.length === 0}
+            newCount={all.filter((r) => r.kind === 'new').length}
+            reviewCount={all.filter((r) => r.kind === 'review').length}
+            successRate={all.length > 0 ? firstTry / all.length : null}
+            streak={streak}
+            nextDueText={
+              nextDue ? t(nextDueKey(nextDue.kind), { time: nextDue.value, date: nextDue.value }) : null
+            }
+            remainingDue={doneStats?.remainingDue ?? 0}
+            reminderOffer={remindersEnabled ? null : DEFAULT_REMINDER_TIMES[reviewMoment]}
+            onContinue={() => router.replace('/session')}
+            onEnableReminders={() => void enableReminders()}
+            onClose={() => router.back()}
+          />
         </SafeAreaView>
       </ThemedView>
     );
@@ -241,161 +220,208 @@ export default function SessionScreen() {
   const chapter = getChapter(item.surah);
   const verse = getVerses(item.surah)[item.ayah - 1];
   const isPlaying = playing?.surah === item.surah && playing?.ayah === item.ayah;
-  const progress = index / queue.length;
+  const wordCount = splitWords(verse.tr).length;
+  const isNew = item.kind === 'new' && !isRetry;
+  const fullyShown = phase !== 'recall';
+
+  const advance = (nextQueue: SessionItem[], nextResults: Record<string, Result>) => {
+    stop();
+    const nextIndex = index + 1;
+    setIndex(nextIndex);
+    setRevealedWords(new Set());
+    setListens(0);
+    const next = nextQueue[nextIndex];
+    if (next) {
+      const retry = itemKey(next) in nextResults;
+      setPhase(next.kind === 'new' && !retry ? 'listen' : 'recall');
+    } else {
+      registerSessionDone();
+    }
+  };
+
+  const onRate = (grade: Grade) => {
+    const existing = getItem(item.surah, item.ayah);
+    const card = existing?.card ?? newCard();
+    saveItem(item.surah, item.ayah, rate(card, grade));
+    logReview(item.surah, item.ayah, grade);
+
+    const key = itemKey(item);
+    const nextResults =
+      key in results ? results : { ...results, [key]: { kind: item.kind, firstGrade: grade } };
+    setResults(nextResults);
+
+    let nextQueue = queue;
+    if (grade === Rating.Again) {
+      nextQueue = [...queue, item];
+      setQueue(nextQueue);
+    }
+    advance(nextQueue, nextResults);
+  };
 
   const revealWord = (wordIndex: number) => {
-    void Haptics.selectionAsync();
     const next = new Set(revealedWords);
     next.add(wordIndex);
     setRevealedWords(next);
-    // Every word checked: show the full verse and move on to self-rating.
-    if (next.size >= splitWords(verse.tr).length) setRevealed(true);
+    // Every word checked: the verse is complete, time to evaluate.
+    if (next.size >= wordCount) setPhase('rate');
   };
 
-  const title =
-    item.kind === 'new'
-      ? phase === 'listen'
-        ? t('session.listenTitle')
-        : t('session.recallTitle')
-      : t('session.reviewTitle');
-  const hint =
-    item.kind === 'new'
-      ? phase === 'listen'
-        ? t('session.listenHint')
-        : t('session.recallHint')
-      : t('session.reviewHint');
+  const toggleLoop = () => {
+    loopRef.current = !loopRef.current;
+    setLoop(loopRef.current);
+  };
+
+  const steps = isNew
+    ? [t('session.stepListen'), t('session.stepRecite'), t('session.stepRate')]
+    : [t('session.stepRecite'), t('session.stepRate')];
+  const stepIndex = isNew
+    ? phase === 'listen'
+      ? 0
+      : phase === 'recall'
+        ? 1
+        : 2
+    : phase === 'recall'
+      ? 0
+      : 1;
+
+  const kindColor = isRetry ? theme.danger : item.kind === 'new' ? theme.tint : theme.info;
+  const kindLabel = isRetry
+    ? t('session.retryBadge')
+    : item.kind === 'new'
+      ? t('session.newBadge')
+      : t('session.reviewBadge');
+
+  const instruction =
+    phase === 'listen'
+      ? t('session.listenHint')
+      : phase === 'recall'
+        ? t('session.recallHint')
+        : t('session.rateHint');
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
           <Pressable
-            onPress={() => { stop(); router.back(); }}
-            hitSlop={8}
+            onPress={close}
+            hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={t('a11y.close')}>
-            <Ionicons name="close" size={26} color={theme.text} />
+            accessibilityLabel={t('a11y.close')}
+            style={[styles.roundButton, { backgroundColor: theme.backgroundElement }]}>
+            <Ionicons name="close" size={20} color={theme.text} />
           </Pressable>
-          <View style={[styles.progressTrack, { backgroundColor: theme.backgroundElement }]}>
-            <View
-              style={[
-                styles.progressFill,
-                { backgroundColor: theme.tint, width: `${Math.round(progress * 100)}%` },
-              ]}
-            />
-          </View>
-          <ThemedText type="small" themeColor="textSecondary">
-            {index + 1}/{queue.length}
+          <FlowProgress progress={index / queue.length} />
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.counter}>
+            {`${Math.min(index + 1, queue.length)}/${queue.length}`}
           </ThemedText>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.badgeRow}>
+          <Animated.View key={`${index}`} entering={FadeInRight.duration(320)} style={styles.itemBlock}>
+            <View style={styles.contextRow}>
+              <View style={[styles.kindChip, { backgroundColor: kindColor + '22' }]}>
+                <View style={[styles.kindDot, { backgroundColor: kindColor }]} />
+                <ThemedText type="smallBold" style={{ color: kindColor }}>
+                  {kindLabel}
+                </ThemedText>
+              </View>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.flex} numberOfLines={1}>
+                {t('session.verseRef', { surah: chapter.nameSimple, ayah: item.ayah })}
+              </ThemedText>
+              <ThemedText style={[styles.surahArabic, { color: theme.textSecondary }]}>
+                {chapter.nameArabic}
+              </ThemedText>
+            </View>
+
+            <StepTrack steps={steps} current={stepIndex} />
+
             <View
               style={[
-                styles.badge,
-                { backgroundColor: item.kind === 'new' ? theme.tintSoft : theme.backgroundElement },
+                styles.verseCard,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: phase === 'rate' ? theme.tint + '55' : 'transparent',
+                },
               ]}>
-              <ThemedText
-                type="smallBold"
-                style={{ color: item.kind === 'new' ? theme.tint : theme.textSecondary }}>
-                {item.kind === 'new' ? t('session.newBadge') : t('session.reviewBadge')}
-              </ThemedText>
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">
-              {chapter.nameSimple} · {item.ayah}
-            </ThemedText>
-          </View>
-
-          <ThemedText type="default">{title}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {hint}
-          </ThemedText>
-
-          <ThemedView type="backgroundElement" style={styles.verseCard}>
-            <BlurredArabicVerse
-              text={verse.ar}
-              revealed={phase === 'listen' || revealed ? 'all' : revealedWords}
-              onReveal={phase === 'recall' && !revealed ? revealWord : undefined}
-              fontScale={arabicFontScale}
-            />
-            <PhoneticLine
-              text={verse.tr}
-              revealed={phase === 'listen' || revealed ? 'all' : revealedWords}
-              onReveal={phase === 'recall' && !revealed ? revealWord : undefined}
-            />
-            {(phase === 'listen' || revealed) && showTranslation && (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-                {i18n.language === 'fr' ? verse.fr : verse.en}
-              </ThemedText>
-            )}
-          </ThemedView>
-
-          {(phase === 'listen' || revealed) && (
-            <View style={styles.audioRow}>
-              <Pressable
-                style={[styles.controlButton, { backgroundColor: theme.backgroundElement }]}
-                onPress={() => (isPlaying ? stop() : play(item.surah, item.ayah))}>
-                <Ionicons name={isPlaying ? 'stop' : 'play'} size={16} color={theme.tint} />
-                <ThemedText type="smallBold">{t('session.playAyah')}</ThemedText>
-              </Pressable>
-              {phase === 'listen' && (
+              {fullyShown && phase === 'rate' ? (
                 <Pressable
-                  style={[
-                    styles.controlButton,
-                    { backgroundColor: loop ? theme.tintSoft : theme.backgroundElement },
-                  ]}
-                  onPress={toggleLoop}>
-                  <Ionicons name="repeat" size={16} color={loop ? theme.tint : theme.textSecondary} />
-                  <ThemedText type="smallBold" style={loop ? { color: theme.tint } : undefined}>
-                    {t('surah.loop')}
-                  </ThemedText>
+                  onPress={() => (isPlaying ? stop() : play(item.surah, item.ayah))}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={isPlaying ? t('a11y.pause') : t('a11y.playVerse')}
+                  style={[styles.cardAudio, { backgroundColor: theme.background }]}>
+                  <Ionicons name={isPlaying ? 'pause' : 'volume-medium-outline'} size={16} color={theme.tint} />
                 </Pressable>
-              )}
-              <SpeedPill />
+              ) : null}
+              <MaskedArabicVerse
+                text={verse.ar}
+                revealed={fullyShown ? 'all' : revealedWords}
+                onReveal={phase === 'recall' ? revealWord : undefined}
+                fontScale={arabicFontScale * 1.1}
+              />
+              <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+              <PhoneticLine
+                text={verse.tr}
+                revealed={fullyShown ? 'all' : revealedWords}
+                onReveal={phase === 'recall' ? revealWord : undefined}
+              />
+              {fullyShown && showTranslation ? (
+                <Animated.View entering={FadeIn.duration(400)}>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.translation}>
+                    {i18n.language === 'fr' ? verse.fr : verse.en}
+                  </ThemedText>
+                </Animated.View>
+              ) : null}
             </View>
-          )}
+
+            <View style={styles.instruction}>
+              <Ionicons
+                name={phase === 'listen' ? 'headset-outline' : phase === 'recall' ? 'mic-outline' : 'help-buoy-outline'}
+                size={16}
+                color={theme.textSecondary}
+              />
+              <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>
+                {instruction}
+              </ThemedText>
+            </View>
+
+            {phase === 'recall' && revealedWords.size > 0 ? (
+              <ThemedText style={[styles.peekCount, { color: theme.textSecondary }]}>
+                {t('session.wordsChecked', { count: revealedWords.size, total: wordCount })}
+              </ThemedText>
+            ) : null}
+
+            {phase === 'listen' ? (
+              <ListenPanel
+                playing={isPlaying}
+                listens={listens}
+                loop={loop}
+                onPlay={() => play(item.surah, item.ayah)}
+                onStop={stop}
+                onToggleLoop={toggleLoop}
+              />
+            ) : null}
+          </Animated.View>
         </ScrollView>
 
         <View style={styles.footer}>
           {phase === 'listen' ? (
-            <Pressable
-              style={[styles.primaryButton, { backgroundColor: theme.tint }]}
+            <PrimaryButton
+              label={t('session.readyToRecite')}
+              icon="mic-outline"
               onPress={() => {
                 stop();
                 setPhase('recall');
-              }}>
-              <ThemedText type="default" style={styles.primaryButtonText}>
-                {t('session.next')}
-              </ThemedText>
-            </Pressable>
-          ) : !revealed ? (
-            <Pressable
-              style={[styles.primaryButton, { backgroundColor: theme.tint }]}
-              onPress={() => setRevealed(true)}>
-              <ThemedText type="default" style={styles.primaryButtonText}>
-                {t('session.reveal')}
-              </ThemedText>
-            </Pressable>
+              }}
+            />
+          ) : phase === 'recall' ? (
+            <PrimaryButton
+              label={t('session.check')}
+              icon="eye-outline"
+              onPress={() => setPhase('rate')}
+            />
           ) : (
-            <View style={styles.ratingRow}>
-              {(
-                [
-                  [Rating.Again, t('session.again'), theme.danger],
-                  [Rating.Hard, t('session.hard'), theme.warning],
-                  [Rating.Good, t('session.good'), theme.tint],
-                  [Rating.Easy, t('session.easy'), theme.info],
-                ] as const
-              ).map(([grade, label, color]) => (
-                <RatingButton
-                  key={label}
-                  color={color}
-                  label={label}
-                  interval={previews ? formatInterval(previews[grade]) : undefined}
-                  onPress={() => onRate(grade)}
-                />
-              ))}
-            </View>
+            <RatingGrid key={`${index}`} intervals={previews} onRate={onRate} />
           )}
         </View>
       </SafeAreaView>
@@ -403,116 +429,76 @@ export default function SessionScreen() {
   );
 }
 
-function RatingButton({
-  color,
-  label,
-  interval,
-  onPress,
-}: {
-  color: string;
-  label: string;
-  interval?: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={() => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      style={({ pressed }) => [
-        styles.ratingButton,
-        { backgroundColor: color + '1F', transform: [{ scale: pressed ? 0.95 : 1 }] },
-      ]}>
-      <ThemedText type="smallBold" style={{ color }}>
-        {label}
-      </ThemedText>
-      {interval ? (
-        <ThemedText style={[styles.ratingInterval, { color }]}>{interval}</ThemedText>
-      ) : null}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
+  flex: { flex: 1 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  progressTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: 8, borderRadius: 4 },
-  content: { gap: Spacing.two, paddingVertical: Spacing.two },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  badge: {
-    borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+  roundButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  counter: { minWidth: 40, textAlign: 'right' },
+  content: { paddingVertical: Spacing.two, flexGrow: 1 },
+  itemBlock: { gap: Spacing.three },
+  contextRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  kindChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  kindDot: { width: 7, height: 7, borderRadius: 4 },
+  surahArabic: { fontSize: 20, lineHeight: 34, writingDirection: 'rtl' },
+  stepTrack: { flexDirection: 'row', alignItems: 'center' },
+  stepItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  stepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNum: { fontSize: 11, lineHeight: 14, fontWeight: 700 },
+  stepLabel: { fontSize: 13, lineHeight: 17 },
+  stepLine: { flex: 1, height: 2, borderRadius: 1, marginHorizontal: 4 },
   verseCard: {
-    borderRadius: Spacing.three,
-    padding: Spacing.four,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.five,
     gap: Spacing.three,
-    marginTop: Spacing.two,
   },
-  audioRow: { flexDirection: 'row', gap: Spacing.two },
-  controlButton: {
+  cardAudio: {
+    position: 'absolute',
+    top: Spacing.three,
+    right: Spacing.three,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  divider: { height: 1, marginHorizontal: Spacing.five },
+  translation: { textAlign: 'center', fontWeight: 400, lineHeight: 20 },
+  instruction: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  footer: { paddingVertical: Spacing.three, gap: Spacing.two },
-  primaryButton: {
-    borderRadius: Spacing.three,
-    paddingVertical: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: { color: '#ffffff', fontWeight: '700' },
-  ratingRow: { flexDirection: 'row', gap: Spacing.two },
-  ratingButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  ratingInterval: { fontSize: 11, lineHeight: 14, opacity: 0.75 },
-  doneContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: Spacing.six,
-  },
-  center: { textAlign: 'center' },
-  scienceCard: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
     alignItems: 'flex-start',
-  },
-  reminderCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: Spacing.two,
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    alignSelf: 'stretch',
+    paddingHorizontal: Spacing.one,
   },
-  streakChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
-    borderRadius: 999,
-  },
+  peekCount: { fontSize: 12, lineHeight: 16, paddingHorizontal: Spacing.one },
+  footer: { paddingTop: Spacing.two, paddingBottom: Spacing.three },
 });
