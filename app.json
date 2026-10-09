@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.nmoussaoui.memoriqzu5513dc8rkcafyvcdx3",
+      "bundleIdentifier": "com.nmoussaoui.memoriq",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
