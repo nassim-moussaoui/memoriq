@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { Spacing } from '@/constants/theme';
 import { useAppStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
@@ -93,134 +93,153 @@ export function AccountSection() {
     { backgroundColor: theme.background, color: theme.text },
   ];
 
-  return (
-    <ThemedView type="backgroundElement" style={styles.section}>
-      <View style={styles.headerRow}>
-        <Ionicons name="cloud-outline" size={18} color={theme.tint} />
-        <ThemedText type="default">{t('auth.title')}</ThemedText>
-      </View>
-      <ThemedText type="small" themeColor="textSecondary">
-        {t('auth.subtitle')}
+  const feedback = message ? (
+    <View style={styles.messageRow}>
+      <Ionicons
+        name={message.kind === 'error' ? 'alert-circle' : 'checkmark-circle'}
+        size={16}
+        color={message.kind === 'error' ? theme.danger : theme.tint}
+      />
+      <ThemedText
+        type="small"
+        style={[styles.flex, { color: message.kind === 'error' ? theme.danger : theme.textSecondary }]}>
+        {message.text}
       </ThemedText>
+    </View>
+  ) : null;
 
-      {session ? (
-        <>
-          <ThemedText type="small">{session.user.email}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {lastSyncAt
-              ? t('auth.syncedAt', {
-                  time: new Date(lastSyncAt).toLocaleString(i18n.language),
-                })
-              : t('auth.syncNever')}
-          </ThemedText>
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={[styles.button, { backgroundColor: theme.tint }]}
-              disabled={busy}
-              onPress={sync}>
-              {busy ? (
-                <ActivityIndicator color="#ffffff" size="small" />
-              ) : (
-                <ThemedText type="smallBold" style={styles.buttonText}>
-                  {t('auth.sync')}
+  if (session) {
+    const email = session.user.email ?? '';
+    return (
+      <View style={styles.wrap}>
+        <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+          <View style={styles.identity}>
+            <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
+              <ThemedText style={styles.avatarText}>{(email[0] ?? '?').toUpperCase()}</ThemedText>
+            </View>
+            <View style={styles.flex}>
+              <ThemedText style={styles.email} numberOfLines={1}>
+                {email}
+              </ThemedText>
+              <View style={styles.syncLine}>
+                <View style={[styles.syncDot, { backgroundColor: lastSyncAt ? theme.tint : theme.warning }]} />
+                <ThemedText style={[styles.syncText, { color: theme.textSecondary }]}>
+                  {lastSyncAt
+                    ? t('auth.syncedAt', { time: new Date(lastSyncAt).toLocaleString(i18n.language) })
+                    : t('auth.syncNever')}
                 </ThemedText>
-              )}
-            </Pressable>
-            <Pressable
-              style={[styles.button, { backgroundColor: theme.backgroundSelected }]}
-              disabled={busy}
-              onPress={confirmSignOut}>
-              <ThemedText type="smallBold">{t('auth.signOut')}</ThemedText>
-            </Pressable>
+              </View>
+            </View>
           </View>
-        </>
-      ) : (
-        <>
-          <TextInput
-            style={inputStyle}
-            placeholder={t('auth.email')}
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={inputStyle}
-            placeholder={t('auth.password')}
-            placeholderTextColor={theme.textSecondary}
-            autoComplete="password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={[styles.button, { backgroundColor: theme.tint }]}
-              disabled={busy || !email || !password}
-              onPress={signIn}>
-              {busy ? (
-                <ActivityIndicator color="#ffffff" size="small" />
-              ) : (
-                <ThemedText type="smallBold" style={styles.buttonText}>
-                  {t('auth.signIn')}
-                </ThemedText>
-              )}
-            </Pressable>
-            <Pressable
-              style={[styles.button, { backgroundColor: theme.backgroundSelected }]}
-              disabled={busy || !email || !password}
-              onPress={signUp}>
-              <ThemedText type="smallBold">{t('auth.signUp')}</ThemedText>
-            </Pressable>
-          </View>
-        </>
-      )}
-
-      {message && (
-        <View style={styles.messageRow}>
-          <Ionicons
-            name={message.kind === 'error' ? 'alert-circle' : 'checkmark-circle'}
-            size={16}
-            color={message.kind === 'error' ? theme.danger : theme.tint}
-          />
-          <ThemedText
-            type="small"
-            style={[
-              { flex: 1 },
-              message.kind === 'error' ? { color: theme.danger } : { color: theme.textSecondary },
-            ]}>
-            {message.text}
-          </ThemedText>
+          <View style={[styles.separator, { backgroundColor: theme.backgroundSelected }]} />
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={sync}
+            style={({ pressed }) => [styles.action, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            {busy ? (
+              <ActivityIndicator color={theme.tint} size="small" />
+            ) : (
+              <Ionicons name="sync" size={18} color={theme.tint} />
+            )}
+            <ThemedText style={[styles.actionText, { color: theme.tint }]}>{t('auth.sync')}</ThemedText>
+          </Pressable>
+          <View style={[styles.separator, { backgroundColor: theme.backgroundSelected }]} />
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={confirmSignOut}
+            style={({ pressed }) => [styles.action, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            <Ionicons name="log-out-outline" size={18} color={theme.danger} />
+            <ThemedText style={[styles.actionText, { color: theme.danger }]}>{t('auth.signOut')}</ThemedText>
+          </Pressable>
         </View>
-      )}
-    </ThemedView>
+        {feedback}
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.card, styles.signInCard, { backgroundColor: theme.backgroundElement }]}>
+      <View style={[styles.identity, styles.identityFlat]}>
+        <View style={[styles.avatar, { backgroundColor: theme.tintSoft }]}>
+          <Ionicons name="cloud-outline" size={22} color={theme.tint} />
+        </View>
+        <View style={styles.flex}>
+          <ThemedText style={styles.email}>{t('auth.title')}</ThemedText>
+          <ThemedText style={[styles.syncText, { color: theme.textSecondary }]}>{t('auth.subtitle')}</ThemedText>
+        </View>
+      </View>
+      <TextInput
+        style={inputStyle}
+        placeholder={t('auth.email')}
+        placeholderTextColor={theme.textSecondary}
+        autoCapitalize="none"
+        autoComplete="email"
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        style={inputStyle}
+        placeholder={t('auth.password')}
+        placeholderTextColor={theme.textSecondary}
+        autoComplete="password"
+        textContentType="password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+      <View style={styles.buttons}>
+        <PrimaryButton
+          label={busy ? '...' : t('auth.signIn')}
+          icon={null}
+          disabled={busy || !email || !password}
+          onPress={() => void signIn()}
+        />
+        <PrimaryButton
+          label={t('auth.signUp')}
+          icon={null}
+          variant="soft"
+          disabled={busy || !email || !password}
+          onPress={() => void signUp()}
+        />
+      </View>
+      {feedback}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  input: {
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 2,
-    fontSize: 15,
-  },
-  buttonRow: { flexDirection: 'row', gap: Spacing.two },
-  button: {
-    flex: 1,
-    borderRadius: Spacing.two,
-    paddingVertical: Spacing.two + 2,
+  wrap: { gap: Spacing.two },
+  flex: { flex: 1 },
+  card: { borderRadius: 22, overflow: 'hidden' },
+  signInCard: { padding: Spacing.three, gap: Spacing.three },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three },
+  identityFlat: { padding: 0 },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#ffffff', fontSize: 20, lineHeight: 26, fontWeight: 800 },
+  email: { fontSize: 16, lineHeight: 21, fontWeight: 700 },
+  syncLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  syncDot: { width: 7, height: 7, borderRadius: 4 },
+  syncText: { fontSize: 12.5, lineHeight: 17 },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: Spacing.three },
+  action: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    minHeight: 52,
   },
-  buttonText: { color: '#ffffff' },
-  messageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
+  actionText: { fontSize: 16, lineHeight: 21, fontWeight: 600 },
+  input: {
+    borderRadius: 14,
+    paddingHorizontal: Spacing.three,
+    height: 48,
+    fontSize: 16,
+  },
+  buttons: { gap: Spacing.two },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one, paddingHorizontal: Spacing.one },
   note: { textAlign: 'center' },
 });

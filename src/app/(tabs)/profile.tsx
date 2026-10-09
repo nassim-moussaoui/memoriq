@@ -1,14 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AccountSection } from '@/components/account-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { SettingsRow, SettingsSection, Stepper } from '@/components/ui/settings';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { RECITERS, getReciter } from '@/lib/audio';
 import {
   addMinutesToTime,
@@ -18,7 +22,12 @@ import {
   scheduleDailyReminder,
 } from '@/lib/notifications';
 import { useAppStore } from '@/lib/store';
-import { useTheme } from '@/hooks/use-theme';
+
+const FONT_MIN = 0.8;
+const FONT_MAX = 1.6;
+const FONT_STEP = 0.1;
+/** "In the name of Allah, the Most Merciful, the Most Compassionate". */
+const BASMALA = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -32,6 +41,7 @@ export default function ProfileScreen() {
       router.push('/paywall');
       return;
     }
+    void Haptics.selectionAsync();
     store.setReciterId(id);
     setReciterListOpen(false);
   };
@@ -55,153 +65,197 @@ export default function ProfileScreen() {
   };
 
   const shiftReminderTime = async (deltaMinutes: number) => {
+    void Haptics.selectionAsync();
     const next = addMinutesToTime(reminderTime, deltaMinutes);
     store.setReminderTime(next);
     if (store.remindersEnabled) await scheduleDailyReminder(next);
   };
 
+  const fontScale = Math.round(store.arabicFontScale * 10) / 10;
+  const setFont = (next: number) => {
+    void Haptics.selectionAsync();
+    store.setArabicFontScale(Math.round(Math.min(Math.max(next, FONT_MIN), FONT_MAX) * 10) / 10);
+  };
+
+  const switchProps = { trackColor: { true: theme.tint, false: theme.backgroundSelected } };
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets>
-        <ThemedText type="subtitle" style={styles.title}>
-          {t('profile.title')}
-        </ThemedText>
+          <ThemedText style={styles.title}>{t('profile.title')}</ThemedText>
 
-        <Pressable onPress={() => router.push('/paywall')}>
-          <ThemedView style={[styles.premiumCard, { backgroundColor: theme.tintSoft }]}>
-            <Ionicons name="star" size={22} color={theme.tint} />
-            <View style={{ flex: 1 }}>
-              <ThemedText type="default" style={{ color: theme.tint }}>
-                {t('profile.premiumTitle')}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('profile.premiumSubtitle')}
-              </ThemedText>
+          <AccountSection />
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/paywall')}
+            style={({ pressed }) => [
+              styles.premium,
+              { backgroundColor: theme.tint, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}>
+            <View style={styles.premiumIcon}>
+              <Ionicons name="star" size={20} color="#ffffff" />
             </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.tint} />
-          </ThemedView>
-        </Pressable>
-
-        <ThemedView type="backgroundElement" style={styles.section}>
-          <Pressable style={styles.row} onPress={() => setReciterListOpen((open) => !open)}>
-            <ThemedText type="default" style={{ flex: 1 }}>
-              {t('profile.reciter')}
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {reciter.name}
-            </ThemedText>
-            <Ionicons
-              name={reciterListOpen ? 'chevron-up' : 'chevron-down'}
-              size={16}
-              color={theme.textSecondary}
-            />
+            <View style={styles.flex}>
+              <ThemedText style={styles.premiumTitle}>{t('profile.premiumTitle')}</ThemedText>
+              <ThemedText style={styles.premiumSub}>{t('profile.premiumSubtitle')}</ThemedText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#ffffff" />
           </Pressable>
-          {reciterListOpen &&
-            RECITERS.map((r) => {
-              const selected = r.id === reciter.id;
-              const locked = r.premium && !store.isPremium;
-              return (
-                <Pressable
-                  key={r.id}
-                  style={styles.reciterOption}
-                  onPress={() => pickReciter(r.id, r.premium)}>
-                  <Ionicons
-                    name={selected ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
-                    color={selected ? theme.tint : theme.textSecondary}
+
+          <SettingsSection title={t('profile.sectionLearning')}>
+            <SettingsRow
+              icon="flag"
+              iconColor={theme.tint}
+              label={t('profile.plan')}
+              value={t('profile.planValue', { count: store.minutesPerDay })}
+              onPress={() => router.push('/onboarding')}
+            />
+            <SettingsRow
+              icon="mic"
+              iconColor={theme.info}
+              label={t('profile.reciter')}
+              value={reciter.name}
+              onPress={() => setReciterListOpen((open) => !open)}
+              chevron={false}
+              right={
+                <Ionicons
+                  name={reciterListOpen ? 'chevron-up' : 'chevron-down'}
+                  size={17}
+                  color={theme.textSecondary}
+                />
+              }
+            />
+            {reciterListOpen
+              ? RECITERS.map((r) => {
+                  const selected = r.id === reciter.id;
+                  const locked = r.premium && !store.isPremium;
+                  return (
+                    <SettingsRow
+                      key={r.id}
+                      label={r.name}
+                      detail={r.id === 'husary_muallim' ? t('profile.reciterTeaching') : undefined}
+                      onPress={() => pickReciter(r.id, r.premium)}
+                      chevron={false}
+                      right={
+                        locked ? (
+                          <View style={[styles.lockPill, { backgroundColor: theme.tintSoft }]}>
+                            <Ionicons name="lock-closed" size={11} color={theme.tint} />
+                            <ThemedText style={[styles.lockText, { color: theme.tint }]}>
+                              {t('library.premium')}
+                            </ThemedText>
+                          </View>
+                        ) : selected ? (
+                          <Ionicons name="checkmark" size={20} color={theme.tint} />
+                        ) : null
+                      }
+                    />
+                  );
+                })
+              : null}
+          </SettingsSection>
+
+          <SettingsSection title={t('profile.sectionDisplay')}>
+            <SettingsRow
+              icon="language"
+              iconColor={theme.warning}
+              label={t('profile.translation')}
+              right={
+                <Switch value={store.showTranslation} onValueChange={store.setShowTranslation} {...switchProps} />
+              }
+            />
+            <SettingsRow
+              icon="text"
+              iconColor={theme.info}
+              label={t('profile.transliteration')}
+              detail={t('profile.transliterationDetail')}
+              right={
+                <Switch
+                  value={store.showTransliteration}
+                  onValueChange={store.setShowTransliteration}
+                  {...switchProps}
+                />
+              }
+            />
+            <SettingsRow
+              icon="resize"
+              iconColor={theme.tint}
+              label={t('profile.arabicSize')}
+              right={
+                <Stepper
+                  value={`${Math.round(fontScale * 100)} %`}
+                  onDecrement={() => setFont(fontScale - FONT_STEP)}
+                  onIncrement={() => setFont(fontScale + FONT_STEP)}
+                  decrementLabel={t('a11y.smaller')}
+                  incrementLabel={t('a11y.bigger')}
+                  canDecrement={fontScale > FONT_MIN + 0.01}
+                  canIncrement={fontScale < FONT_MAX - 0.01}
+                />
+              }
+            />
+            <View style={styles.preview}>
+              <Text
+                style={[
+                  styles.previewText,
+                  { color: theme.text, fontSize: 26 * fontScale, lineHeight: 26 * fontScale * 1.8 },
+                ]}>
+                {BASMALA}
+              </Text>
+            </View>
+          </SettingsSection>
+
+          <SettingsSection
+            title={t('profile.sectionReminders')}
+            footer={store.remindersEnabled ? t('profile.remindersFooter') : undefined}>
+            <SettingsRow
+              icon="notifications"
+              iconColor={theme.danger}
+              label={t('profile.reminders')}
+              right={
+                <Switch
+                  value={store.remindersEnabled}
+                  onValueChange={(v) => void toggleReminders(v)}
+                  {...switchProps}
+                />
+              }
+            />
+            {store.remindersEnabled ? (
+              <SettingsRow
+                icon="time"
+                iconColor={theme.textSecondary}
+                label={t('profile.reminderTime')}
+                right={
+                  <Stepper
+                    value={reminderTime}
+                    onDecrement={() => void shiftReminderTime(-30)}
+                    onIncrement={() => void shiftReminderTime(30)}
+                    decrementLabel={t('a11y.earlier')}
+                    incrementLabel={t('a11y.later')}
                   />
-                  <ThemedText
-                    type="small"
-                    style={[{ flex: 1 }, selected ? { color: theme.tint } : undefined]}>
-                    {r.name}
-                  </ThemedText>
-                  {locked && (
-                    <View style={[styles.premiumPill, { backgroundColor: theme.tintSoft }]}>
-                      <Ionicons name="lock-closed" size={11} color={theme.tint} />
-                      <ThemedText style={[styles.premiumPillText, { color: theme.tint }]}>
-                        {t('library.premium')}
-                      </ThemedText>
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-          <View style={styles.row}>
-            <ThemedText type="default" style={{ flex: 1 }}>
-              {t('profile.translation')}
-            </ThemedText>
-            <Switch
-              value={store.showTranslation}
-              onValueChange={store.setShowTranslation}
-              trackColor={{ true: theme.tint }}
-            />
-          </View>
-          <View style={styles.row}>
-            <ThemedText type="default" style={{ flex: 1 }}>
-              {t('profile.transliteration')}
-            </ThemedText>
-            <Switch
-              value={store.showTransliteration}
-              onValueChange={store.setShowTransliteration}
-              trackColor={{ true: theme.tint }}
-            />
-          </View>
-        </ThemedView>
+                }
+              />
+            ) : null}
+          </SettingsSection>
 
-        <ThemedView type="backgroundElement" style={styles.section}>
-          <View style={styles.row}>
-            <Ionicons name="notifications-outline" size={18} color={theme.text} />
-            <ThemedText type="default" style={{ flex: 1 }}>
-              {t('profile.reminders')}
-            </ThemedText>
-            <Switch
-              value={store.remindersEnabled}
-              onValueChange={(v) => void toggleReminders(v)}
-              trackColor={{ true: theme.tint }}
+          <SettingsSection title={t('profile.sectionAbout')}>
+            <SettingsRow
+              icon="school"
+              iconColor={theme.info}
+              label={t('profile.method')}
+              onPress={() => router.push('/onboarding')}
             />
-          </View>
-          {store.remindersEnabled && (
-            <View style={styles.row}>
-              <ThemedText type="default" style={{ flex: 1 }}>
-                {t('profile.reminderTime')}
-              </ThemedText>
-              <Pressable
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={t('a11y.earlier')}
-                onPress={() => void shiftReminderTime(-30)}>
-                <Ionicons name="remove-circle-outline" size={24} color={theme.tint} />
-              </Pressable>
-              <ThemedText type="smallBold" style={styles.timeValue}>
-                {reminderTime}
-              </ThemedText>
-              <Pressable
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={t('a11y.later')}
-                onPress={() => void shiftReminderTime(30)}>
-                <Ionicons name="add-circle-outline" size={24} color={theme.tint} />
-              </Pressable>
-            </View>
-          )}
-        </ThemedView>
-
-        <ThemedView type="backgroundElement" style={styles.section}>
-          <Pressable style={styles.row} onPress={() => router.push('/onboarding')}>
-            <Ionicons name="school-outline" size={18} color={theme.text} />
-            <ThemedText type="default" style={{ flex: 1 }}>
-              {t('profile.method')}
-            </ThemedText>
-            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
-          </Pressable>
-        </ThemedView>
-
-        <AccountSection />
+            <SettingsRow
+              icon="information-circle"
+              iconColor={theme.textSecondary}
+              label={t('profile.version')}
+              value={Constants.expoConfig?.version ?? '1.0.0'}
+            />
+          </SettingsSection>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -210,24 +264,33 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
+  safeArea: { flex: 1, maxWidth: MaxContentWidth },
+  flex: { flex: 1 },
   scrollContent: {
     paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.five,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  title: { paddingTop: Spacing.two },
-  reciterOption: {
+  title: { fontSize: 28, lineHeight: 34, fontWeight: 800, letterSpacing: -0.4, marginBottom: -Spacing.two },
+  premium: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.two + 2,
-    paddingStart: Spacing.two,
+    gap: Spacing.three,
+    borderRadius: 22,
+    padding: Spacing.three,
   },
-  premiumPill: {
+  premiumIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff26',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumTitle: { color: '#ffffff', fontSize: 16, lineHeight: 21, fontWeight: 800 },
+  premiumSub: { color: '#ffffffd9', fontSize: 12.5, lineHeight: 17 },
+  lockPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -235,23 +298,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
   },
-  premiumPillText: { fontSize: 11, lineHeight: 14, fontWeight: 700 },
-  timeValue: { minWidth: 48, textAlign: 'center' },
-  premiumCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-  },
-  section: {
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.three,
-  },
+  lockText: { fontSize: 11, lineHeight: 14, fontWeight: 700 },
+  preview: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  previewText: { textAlign: 'center', writingDirection: 'rtl' },
 });

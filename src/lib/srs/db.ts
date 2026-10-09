@@ -239,3 +239,56 @@ export function getDailyReviewCounts(days = 90, now: number = Date.now()): Map<s
   );
   return new Map(rows.map((r) => [r.day, r.n]));
 }
+
+/**
+ * Reviews falling due on each of the next `days` local days, today first.
+ * Anything already overdue counts for today.
+ */
+export function getDueForecast(days = 7, now: number = Date.now()): number[] {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + days);
+  const rows = db.getAllSync<{ due_at: number }>(
+    "SELECT due_at FROM memorization_items WHERE due_at < ?",
+    [end.getTime()]
+  );
+  const counts = new Array<number>(days).fill(0);
+  for (const { due_at } of rows) {
+    const day = new Date(due_at);
+    day.setHours(0, 0, 0, 0);
+    const offset = Math.round((day.getTime() - start.getTime()) / 86_400_000);
+    counts[Math.min(Math.max(offset, 0), days - 1)] += 1;
+  }
+  return counts;
+}
+
+/** Share of reviews over the last `days` days not rated "Again", or null. */
+export function getSuccessRate(days = 30, now: number = Date.now()): number | null {
+  const row = db.getFirstSync<{ total: number; ok: number }>(
+    `SELECT COUNT(*) AS total, SUM(CASE WHEN rating > 1 THEN 1 ELSE 0 END) AS ok
+     FROM review_logs WHERE reviewed_at >= ?`,
+    [now - days * 24 * 60 * 60 * 1000]
+  );
+  if (!row || row.total === 0) return null;
+  return row.ok / row.total;
+}
+
+export type VerseStatus = "learning" | "due" | "learned";
+
+/**
+ * Learning status of every started ayah of a surah: "due" when a review is
+ * waiting, "learned" once in Review state, "learning" otherwise.
+ */
+export function getSurahStatuses(surah: number, now: number = Date.now()): Map<number, VerseStatus> {
+  const rows = db.getAllSync<{ ayah: number; due_at: number; state: number }>(
+    "SELECT ayah, due_at, state FROM memorization_items WHERE surah = ?",
+    [surah]
+  );
+  return new Map(
+    rows.map((r) => [
+      r.ayah,
+      r.due_at <= now ? "due" : r.state === State.Review ? "learned" : "learning",
+    ])
+  );
+}
