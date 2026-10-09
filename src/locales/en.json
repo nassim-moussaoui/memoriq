@@ -291,7 +291,10 @@
     "syncNever": "Never synced",
     "syncedAt": "Last sync: {{time}}",
     "syncDone": "Synced: {{items}} verses · {{logs}} reviews pushed",
-    "error": "Error: {{message}}"
+    "error": "Error: {{message}}",
+    "forgot": "Forgot your password?",
+    "resetNeedsEmail": "Enter your email above first.",
+    "resetSent": "Email sent: open the link on this phone to choose a new password."
   },
   "a11y": {
     "back": "Back",
@@ -342,5 +345,27 @@
     "practiceTitle": "Chain the surah",
     "practiceDesc_one": "Recite {{count}} passage in one go",
     "practiceDesc_other": "Recite {{count}} passages in one go"
+  },
+  "error": {
+    "title": "Oops, something went wrong",
+    "body": "Your progress is saved on your phone, nothing is lost. Try again, or go back home.",
+    "retry": "Try again",
+    "home": "Back to home",
+    "showDetails": "Technical details",
+    "hideDetails": "Hide details"
+  },
+  "reset": {
+    "title": "New password",
+    "body": "Choose a new password for your Memoriq account.",
+    "newPassword": "New password (6 characters min.)",
+    "confirmPassword": "Confirm the password",
+    "save": "Save",
+    "tooShort": "The password must be at least 6 characters.",
+    "mismatch": "The two passwords do not match.",
+    "doneTitle": "Password changed",
+    "doneBody": "You are signed in with your new password.",
+    "invalidTitle": "Link expired or invalid",
+    "invalidBody": "Request a new link from your profile: it is only valid for a short time.",
+    "backToProfile": "Go to profile"
   }
 }

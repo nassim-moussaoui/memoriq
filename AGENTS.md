@@ -16,6 +16,7 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 - `src/data/quran/`: **generated** offline dataset (114 chapters, 6236 verses: Uthmani text, FR Hamidullah, EN Saheeh International, transliteration). Regenerate with `node scripts/build-quran-data.mjs`; never edit by hand.
 - `src/lib/quran.ts`: chapter metadata + lazy per-surah verse loading; `isFreeSurah()` is the free-tier gate.
 - `src/lib/audio.ts`: reciters + everyayah.com per-ayah mp3 URLs (default: Husary Mu'allim, the teaching recitation).
+- `src/lib/audio-cache.ts`: offline cache of ayah mp3s in the documents folder (".part" download then move); `useAyahAudio` plays the cached file when present and caches the current and next verse.
 - `src/lib/srs/`: the learning engine: `scheduler.ts` (ts-fsrs wrapper with no minute-level learning steps, so every stored interval is at least a day; `previewIntervals` feeds the rating cards), `db.ts` (expo-sqlite persistence, sync API), `segments.ts` (chunking), `queue.ts` (daily session sized by `budgetFor(minutesPerDay)`, with a per-day cap on new verses).
 - `src/lib/notifications.ts`: the daily reminder (expo-notifications) anchored on `reviewMoment`, rescheduled after each session, plus the app icon badge.
 - `src/lib/store.ts`: zustand + AsyncStorage (persist `version: 1`): plan (goal, minutesPerDay, reviewMoment), reminders, playback rate, settings, streak, premium flag. `startingSurahForGoal()` aims the first surah.
@@ -24,7 +25,9 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 
 ## Roadmap
 
-Batches A (dead ends) and B (habit loop) are done. The remaining plan lives in `C:\Users\azert\.claude\plans\snug-munching-clarke.md`: batch C (library search and progress bars, stats charts, reader per-verse state, audio disk cache) and batch D (error boundaries, full settings, password reset and deep links, background audio).
+Done: batches A (dead ends) and B (habit loop); the full redesign (onboarding, session, Today, library with search and filters, stats with heatmap and forecast, grouped settings, surah reader with per-verse status); chain recitation; reliability (route-level `ErrorBoundary` via `src/components/error-screen.tsx`, offline audio cache in `src/lib/audio-cache.ts` with session prefetch, background playback and lock screen info, password reset through the `memoriq://reset-password` deep link).
+
+Next: phase 5 (RevenueCat paywall and the Sadaqa gift flow). The Supabase dashboard must list `memoriq://**` under Auth, URL Configuration, Redirect URLs for the reset link to open the app.
 
 ## Conventions
 

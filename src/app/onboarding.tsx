@@ -489,3 +489,6 @@ const styles = StyleSheet.create({
   outcomeText: { flex: 1 },
   footer: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.three, paddingTop: Spacing.two },
 });
+
+// A render error shows a recovery screen instead of a blank one.
+export { ErrorScreen as ErrorBoundary } from '@/components/error-screen';

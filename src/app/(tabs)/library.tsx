@@ -291,3 +291,6 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.six },
   emptyText: { textAlign: 'center' },
 });
+
+// A render error shows a recovery screen instead of a blank one.
+export { ErrorScreen as ErrorBoundary } from '@/components/error-screen';

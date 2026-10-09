@@ -291,7 +291,10 @@
     "syncNever": "Jamais synchronisé",
     "syncedAt": "Dernière sync : {{time}}",
     "syncDone": "Sync OK : {{items}} versets · {{logs}} révisions envoyées",
-    "error": "Erreur : {{message}}"
+    "error": "Erreur : {{message}}",
+    "forgot": "Mot de passe oublié ?",
+    "resetNeedsEmail": "Saisis d'abord ton email ci-dessus.",
+    "resetSent": "Email envoyé : ouvre le lien reçu sur ce téléphone pour choisir un nouveau mot de passe."
   },
   "a11y": {
     "back": "Retour",
@@ -342,5 +345,27 @@
     "practiceTitle": "Enchaîner la sourate",
     "practiceDesc_one": "Récite {{count}} passage d'une traite",
     "practiceDesc_other": "Récite {{count}} passages d'une traite"
+  },
+  "error": {
+    "title": "Oups, quelque chose s'est mal passé",
+    "body": "Ta progression est enregistrée sur ton téléphone, rien n'est perdu. Réessaie, ou reviens à l'accueil.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil",
+    "showDetails": "Détails techniques",
+    "hideDetails": "Masquer les détails"
+  },
+  "reset": {
+    "title": "Nouveau mot de passe",
+    "body": "Choisis un nouveau mot de passe pour ton compte Memoriq.",
+    "newPassword": "Nouveau mot de passe (6 caractères min.)",
+    "confirmPassword": "Confirme le mot de passe",
+    "save": "Enregistrer",
+    "tooShort": "Le mot de passe doit faire au moins 6 caractères.",
+    "mismatch": "Les deux mots de passe ne correspondent pas.",
+    "doneTitle": "Mot de passe modifié",
+    "doneBody": "Tu es connecté avec ton nouveau mot de passe.",
+    "invalidTitle": "Lien expiré ou invalide",
+    "invalidBody": "Redemande un lien depuis ton profil : il n'est valable que peu de temps.",
+    "backToProfile": "Aller au profil"
   }
 }

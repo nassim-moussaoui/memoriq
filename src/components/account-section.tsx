@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { createURL } from 'expo-linking';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +66,20 @@ export function AccountSection() {
       if (error) throw error;
       return t('auth.confirmEmail');
     });
+
+  const forgotPassword = () => {
+    if (!email.trim()) {
+      setMessage({ kind: 'error', text: t('auth.resetNeedsEmail') });
+      return;
+    }
+    void run(async () => {
+      const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: createURL('/reset-password'),
+      });
+      if (error) throw error;
+      return t('auth.resetSent');
+    });
+  };
 
   const signOut = () =>
     run(async () => {
@@ -206,6 +221,16 @@ export function AccountSection() {
           onPress={() => void signUp()}
         />
       </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={busy}
+        onPress={forgotPassword}
+        hitSlop={8}
+        style={styles.forgot}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.forgotText}>
+          {t('auth.forgot')}
+        </ThemedText>
+      </Pressable>
       {feedback}
     </View>
   );
@@ -240,6 +265,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttons: { gap: Spacing.two },
+  forgot: { alignSelf: 'center', paddingVertical: Spacing.one },
+  forgotText: { textDecorationLine: 'underline' },
   messageRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one, paddingHorizontal: Spacing.one },
   note: { textAlign: 'center' },
 });

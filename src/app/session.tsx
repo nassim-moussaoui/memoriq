@@ -23,6 +23,8 @@ import {
   scheduleDailyReminder,
   syncAppBadge,
 } from '@/lib/notifications';
+import { getReciter } from '@/lib/audio';
+import { prefetchAyahs } from '@/lib/audio-cache';
 import { describeNextDue, nextDueKey } from '@/lib/next-due';
 import { getChapter, getVerses } from '@/lib/quran';
 import { countDue, getItem, getNextDueAt, logReview, saveItem } from '@/lib/srs/db';
@@ -103,6 +105,7 @@ export default function SessionScreen() {
   const setRemindersEnabled = useAppStore((s) => s.setRemindersEnabled);
   const setReminderTime = useAppStore((s) => s.setReminderTime);
   const reviewMoment = useAppStore((s) => s.reviewMoment);
+  const reciterId = useAppStore((s) => s.reciterId);
 
   // "ahead" is the voluntary extra session offered when nothing is due;
   // "chain" is passage practice on one surah, opened from the reader.
@@ -163,6 +166,17 @@ export default function SessionScreen() {
     const timer = setTimeout(autoplay, 450);
     return () => clearTimeout(timer);
   }, [index, phase]);
+
+  // Download the whole session's audio up front, so it keeps working if the
+  // connection drops halfway through.
+  useEffect(() => {
+    const verses = initialQueue.flatMap((q) =>
+      q.kind === 'chain'
+        ? Array.from({ length: q.to - q.from + 1 }, (_, i) => ({ surah: q.surah, ayah: q.from + i }))
+        : [{ surah: q.surah, ayah: q.ayah }],
+    );
+    void prefetchAyahs(getReciter(reciterId), verses);
+  }, [initialQueue, reciterId]);
 
   // Snapshot of what is left once the session ends: read once, after
   // registerSessionDone has already run.
@@ -554,3 +568,6 @@ const styles = StyleSheet.create({
   peekCount: { fontSize: 12, lineHeight: 16, paddingHorizontal: Spacing.one },
   footer: { paddingTop: Spacing.two, paddingBottom: Spacing.three },
 });
+
+// A render error shows a recovery screen instead of a blank one.
+export { ErrorScreen as ErrorBoundary } from '@/components/error-screen';

@@ -27,8 +27,13 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Recitation must be audible even with the iOS mute switch on.
-    setAudioModeAsync({ playsInSilentMode: true });
+    // Recitation must be audible even with the iOS mute switch on, keep going
+    // when the screen locks (listening on the go), and own the lock screen.
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
+    }).catch(() => {});
     // Pull/push progress on launch when signed in; silent no-op otherwise.
     syncNow().catch(() => {});
     syncAppBadge().catch(() => {});
@@ -61,3 +66,6 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+// A render error shows a recovery screen instead of a blank one.
+export { ErrorScreen as ErrorBoundary } from '@/components/error-screen';
