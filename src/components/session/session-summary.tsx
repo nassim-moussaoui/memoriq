@@ -83,6 +83,7 @@ export function SessionSummary({
   newCount,
   reviewCount,
   successRate,
+  chainCount = 0,
   streak,
   nextDueText,
   remainingDue,
@@ -97,6 +98,8 @@ export function SessionSummary({
   reviewCount: number;
   /** Share of verses recited right on the first try, 0 to 1 (null if none). */
   successRate: number | null;
+  /** Passages recited in one go (chain steps) during the session. */
+  chainCount?: number;
   streak: number;
   nextDueText: string | null;
   remainingDue: number;
@@ -157,6 +160,15 @@ export function SessionSummary({
             <Ionicons name="trending-up-outline" size={18} color={theme.tint} />
             <ThemedText type="small" style={[styles.noteText, { color: theme.tint }]}>
               {t('session.successRate', { percent: Math.round(successRate * 100) })}
+            </ThemedText>
+          </Animated.View>
+        ) : null}
+
+        {chainCount > 0 ? (
+          <Animated.View entering={enter(4)} style={[styles.note, { backgroundColor: theme.backgroundElement }]}>
+            <Ionicons name="link" size={18} color={theme.warning} />
+            <ThemedText type="small" style={styles.noteText}>
+              {t('session.chainsDone', { count: chainCount })}
             </ThemedText>
           </Animated.View>
         ) : null}

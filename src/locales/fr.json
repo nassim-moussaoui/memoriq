@@ -126,7 +126,9 @@
     "moreWaiting_one": "{{count}} révision t'attend encore, on enchaîne ?",
     "moreWaiting_other": "{{count}} révisions t'attendent encore, on enchaîne ?",
     "doneScience": "Ton cerveau va maintenant oublier… c'est normal et c'est prévu : Memoriq te fera réviser chaque verset juste avant que tu ne l'oublies. C'est ça, la répétition espacée.",
-    "backHome": "Retour à l'accueil"
+    "backHome": "Retour à l'accueil",
+    "chainsDone_one": "{{count}} passage récité d'une traite",
+    "chainsDone_other": "{{count}} passages récités d'une traite"
   },
   "onboarding": {
     "skip": "Passer",
@@ -322,5 +324,23 @@
     "sadaqaTitle": "Premium + Sadaqa",
     "sadaqaBody": "Paie un peu plus et offre un abonnement Memoriq Premium à un étudiant qui n'en a pas les moyens, quelque part dans le monde.",
     "close": "Fermer"
+  },
+  "chain": {
+    "badge": "Enchaînement",
+    "range": "{{surah}}, versets {{from}} à {{to}}",
+    "title": "Récite le passage d'une traite",
+    "hint": "Enchaîne les versets à voix haute, sans t'arrêter. Touche un mot seulement si tu bloques.",
+    "rateHint": "Regarde surtout les passages d'un verset à l'autre : c'est là que la mémoire décroche.",
+    "show": "Voir le passage",
+    "question": "Comment s'est passé l'enchaînement ?",
+    "redo": "À retravailler",
+    "redoDesc": "On le refait en fin de séance",
+    "bumpy": "Quelques accrocs",
+    "bumpyDesc": "Des hésitations entre versets",
+    "smooth": "Sans faute",
+    "smoothDesc": "Fluide du début à la fin",
+    "practiceTitle": "Enchaîner la sourate",
+    "practiceDesc_one": "Récite {{count}} passage d'une traite",
+    "practiceDesc_other": "Récite {{count}} passages d'une traite"
   }
 }

@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FlowProgress } from '@/components/onboarding/primitives';
 import { MaskedArabicVerse, PhoneticLine, splitWords } from '@/components/recall-verse';
+import { ChainStep, type ChainOutcome } from '@/components/session/chain-step';
 import { ListenPanel } from '@/components/session/listen-panel';
 import { RatingGrid } from '@/components/session/rating-grid';
 import { SessionSummary } from '@/components/session/session-summary';
@@ -25,7 +26,14 @@ import {
 import { describeNextDue, nextDueKey } from '@/lib/next-due';
 import { getChapter, getVerses } from '@/lib/quran';
 import { countDue, getItem, getNextDueAt, logReview, saveItem } from '@/lib/srs/db';
-import { buildReviewAheadPlan, buildSessionPlan, type SessionItem } from '@/lib/srs/queue';
+import {
+  buildChainQueue,
+  buildReviewAheadPlan,
+  buildSessionPlan,
+  sessionQueue,
+  type QueueItem,
+  type SessionItem,
+} from '@/lib/srs/queue';
 import { newCard, previewIntervals, rate, Rating, type Grade } from '@/lib/srs/scheduler';
 import { useAppStore } from '@/lib/store';
 import { syncNow } from '@/lib/sync';
@@ -40,7 +48,8 @@ import { useTheme } from '@/hooks/use-theme';
 type Phase = 'listen' | 'recall' | 'rate';
 type Result = { kind: SessionItem['kind']; firstGrade: Grade };
 
-const itemKey = (item: SessionItem) => `${item.surah}:${item.ayah}`;
+const itemKey = (item: QueueItem) =>
+  item.kind === 'chain' ? `chain:${item.surah}:${item.from}-${item.to}` : `${item.surah}:${item.ayah}`;
 
 function StepTrack({ steps, current }: { steps: string[]; current: number }) {
   const theme = useTheme();
@@ -95,18 +104,20 @@ export default function SessionScreen() {
   const setReminderTime = useAppStore((s) => s.setReminderTime);
   const reviewMoment = useAppStore((s) => s.reviewMoment);
 
-  // "ahead" mode is the voluntary extra session offered when nothing is due.
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  // "ahead" is the voluntary extra session offered when nothing is due;
+  // "chain" is passage practice on one surah, opened from the reader.
+  const { mode, surah: chainSurah } = useLocalSearchParams<{ mode?: string; surah?: string }>();
 
   // The queue is frozen at mount; "Again" re-appends the item so it is
   // retried before the session ends.
-  const initialQueue = useMemo(() => {
-    const plan =
-      mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah, minutesPerDay);
-    return [...plan.newItems, ...plan.reviewItems];
-  }, [activeSurah, minutesPerDay, mode]);
+  const initialQueue = useMemo<QueueItem[]>(() => {
+    if (mode === 'chain') return buildChainQueue(Number(chainSurah));
+    return sessionQueue(
+      mode === 'ahead' ? buildReviewAheadPlan() : buildSessionPlan(activeSurah, minutesPerDay),
+    );
+  }, [activeSurah, chainSurah, minutesPerDay, mode]);
 
-  const [queue, setQueue] = useState<SessionItem[]>(initialQueue);
+  const [queue, setQueue] = useState<QueueItem[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() =>
     initialQueue[0]?.kind === 'new' ? 'listen' : 'recall',
@@ -116,18 +127,26 @@ export default function SessionScreen() {
   const [loop, setLoop] = useState(true);
   const loopRef = useRef(true);
   const [results, setResults] = useState<Record<string, Result>>({});
+  const [chainResults, setChainResults] = useState<Record<string, ChainOutcome>>({});
 
   const item = queue[index];
   const finished = index >= queue.length;
   // A retry of a verse forgotten earlier in this session.
-  const isRetry = !!item && itemKey(item) in results;
+  const isRetry = !!item && (itemKey(item) in results || itemKey(item) in chainResults);
+  // The single-verse item, when the current step is not a chain.
+  const verseItem: SessionItem | null = item && item.kind !== 'chain' ? item : null;
 
   const onAyahFinishedRef = useRef<(played: PlayingAyah) => void>(() => {});
   const { play, stop, playing } = useAyahAudio((played) => onAyahFinishedRef.current(played));
 
   useEffect(() => {
     onAyahFinishedRef.current = (played) => {
-      if (phase !== 'listen' || !item || played.ayah !== item.ayah || played.surah !== item.surah) {
+      if (
+        phase !== 'listen' ||
+        !verseItem ||
+        played.ayah !== verseItem.ayah ||
+        played.surah !== verseItem.surah
+      ) {
         return;
       }
       setListens((n) => n + 1);
@@ -137,7 +156,7 @@ export default function SessionScreen() {
 
   // Each new verse starts playing on its own when its listen stage opens.
   const autoplay = useEffectEvent(() => {
-    if (phase === 'listen' && item) play(item.surah, item.ayah);
+    if (phase === 'listen' && verseItem) play(verseItem.surah, verseItem.ayah);
   });
   useEffect(() => {
     if (phase !== 'listen') return;
@@ -159,10 +178,10 @@ export default function SessionScreen() {
   // Interval preview for the rating cards. Memoized: FSRS fuzz would make
   // the values jitter on every re-render otherwise.
   const previews = useMemo(() => {
-    if (!item || phase !== 'rate') return null;
-    const card = getItem(item.surah, item.ayah)?.card ?? newCard();
+    if (!verseItem || phase !== 'rate') return null;
+    const card = getItem(verseItem.surah, verseItem.ayah)?.card ?? newCard();
     return previewIntervals(card);
-  }, [item, phase]);
+  }, [verseItem, phase]);
 
   useEffect(() => {
     if (finished) {
@@ -198,7 +217,8 @@ export default function SessionScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <SessionSummary
-            empty={all.length === 0}
+            empty={all.length === 0 && Object.keys(chainResults).length === 0}
+            chainCount={Object.keys(chainResults).length}
             newCount={all.filter((r) => r.kind === 'new').length}
             reviewCount={all.filter((r) => r.kind === 'review').length}
             successRate={all.length > 0 ? firstTry / all.length : null}
@@ -217,14 +237,7 @@ export default function SessionScreen() {
     );
   }
 
-  const chapter = getChapter(item.surah);
-  const verse = getVerses(item.surah)[item.ayah - 1];
-  const isPlaying = playing?.surah === item.surah && playing?.ayah === item.ayah;
-  const wordCount = splitWords(verse.tr).length;
-  const isNew = item.kind === 'new' && !isRetry;
-  const fullyShown = phase !== 'recall';
-
-  const advance = (nextQueue: SessionItem[], nextResults: Record<string, Result>) => {
+  const advance = (nextQueue: QueueItem[], verseResults: Record<string, Result>, chains: Record<string, ChainOutcome>) => {
     stop();
     const nextIndex = index + 1;
     setIndex(nextIndex);
@@ -232,12 +245,64 @@ export default function SessionScreen() {
     setListens(0);
     const next = nextQueue[nextIndex];
     if (next) {
-      const retry = itemKey(next) in nextResults;
+      const retry = itemKey(next) in verseResults || itemKey(next) in chains;
       setPhase(next.kind === 'new' && !retry ? 'listen' : 'recall');
     } else {
       registerSessionDone();
     }
   };
+
+  const topBar = (
+    <View style={styles.topBar}>
+      <Pressable
+        onPress={close}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={t('a11y.close')}
+        style={[styles.roundButton, { backgroundColor: theme.backgroundElement }]}>
+        <Ionicons name="close" size={20} color={theme.text} />
+      </Pressable>
+      <FlowProgress progress={index / queue.length} />
+      <ThemedText type="smallBold" themeColor="textSecondary" style={styles.counter}>
+        {`${Math.min(index + 1, queue.length)}/${queue.length}`}
+      </ThemedText>
+    </View>
+  );
+
+  if (item.kind === 'chain') {
+    const onChainDone = (outcome: ChainOutcome) => {
+      const key = itemKey(item);
+      const chains = key in chainResults ? chainResults : { ...chainResults, [key]: outcome };
+      setChainResults(chains);
+      let nextQueue = queue;
+      if (outcome === 'redo') {
+        nextQueue = [...queue, item];
+        setQueue(nextQueue);
+      }
+      advance(nextQueue, results, chains);
+    };
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          {topBar}
+          <ChainStep
+            key={index}
+            item={item}
+            isRetry={isRetry}
+            fontScale={arabicFontScale}
+            onDone={onChainDone}
+          />
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  const chapter = getChapter(item.surah);
+  const verse = getVerses(item.surah)[item.ayah - 1];
+  const isPlaying = playing?.surah === item.surah && playing?.ayah === item.ayah;
+  const wordCount = splitWords(verse.tr).length;
+  const isNew = item.kind === 'new' && !isRetry;
+  const fullyShown = phase !== 'recall';
 
   const onRate = (grade: Grade) => {
     const existing = getItem(item.surah, item.ayah);
@@ -255,7 +320,7 @@ export default function SessionScreen() {
       nextQueue = [...queue, item];
       setQueue(nextQueue);
     }
-    advance(nextQueue, nextResults);
+    advance(nextQueue, nextResults, chainResults);
   };
 
   const revealWord = (wordIndex: number) => {
@@ -301,20 +366,7 @@ export default function SessionScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={close}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('a11y.close')}
-            style={[styles.roundButton, { backgroundColor: theme.backgroundElement }]}>
-            <Ionicons name="close" size={20} color={theme.text} />
-          </Pressable>
-          <FlowProgress progress={index / queue.length} />
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.counter}>
-            {`${Math.min(index + 1, queue.length)}/${queue.length}`}
-          </ThemedText>
-        </View>
+        {topBar}
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View key={`${index}`} entering={FadeInRight.duration(320)} style={styles.itemBlock}>

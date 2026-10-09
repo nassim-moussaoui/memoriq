@@ -13,7 +13,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getChapter, getVerses, isFreeSurah, type Verse } from '@/lib/quran';
 import { getSurahStatuses, type VerseStatus } from '@/lib/srs/db';
-import { nextSegment } from '@/lib/srs/queue';
+import { buildChainQueue, nextSegment } from '@/lib/srs/queue';
 import { useAppStore } from '@/lib/store';
 import { useAyahAudio, type PlayingAyah } from '@/lib/use-ayah-audio';
 
@@ -38,6 +38,7 @@ export default function SurahScreen() {
   const [playAll, setPlayAll] = useState(false);
   const [loop, setLoop] = useState(false);
   const [statuses, setStatuses] = useState<Map<number, VerseStatus>>(new Map());
+  const [chainable, setChainable] = useState(0);
   const loopRef = useRef(false);
   const playAllRef = useRef(false);
   const listRef = useRef<FlatList<Verse>>(null);
@@ -46,7 +47,9 @@ export default function SurahScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (valid) setStatuses(getSurahStatuses(surahId));
+      if (!valid) return;
+      setStatuses(getSurahStatuses(surahId));
+      setChainable(buildChainQueue(surahId).length);
     }, [surahId, valid]),
   );
 
@@ -188,6 +191,30 @@ export default function SurahScreen() {
         </Pressable>
         <SpeedPill />
       </View>
+
+      {chainable > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            stopAll();
+            router.push({ pathname: '/session', params: { mode: 'chain', surah: String(surahId) } });
+          }}
+          style={({ pressed }) => [
+            styles.chainCard,
+            { backgroundColor: theme.backgroundElement, transform: [{ scale: pressed ? 0.98 : 1 }] },
+          ]}>
+          <View style={[styles.chainIcon, { backgroundColor: theme.warning + '22' }]}>
+            <Ionicons name="link" size={18} color={theme.warning} />
+          </View>
+          <View style={styles.flex}>
+            <ThemedText style={styles.chainTitle}>{t('chain.practiceTitle')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.chainDesc}>
+              {t('chain.practiceDesc', { count: chainable })}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
 
       {!NO_BASMALA.has(surahId) ? (
         <Text style={[styles.basmala, { color: theme.textSecondary }]}>{BASMALA}</Text>
@@ -361,6 +388,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
+  chainCard: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderRadius: 18,
+    padding: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  chainIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  chainTitle: { fontSize: 15.5, lineHeight: 20, fontWeight: 700 },
+  chainDesc: { fontWeight: 400, lineHeight: 18 },
   basmala: { fontSize: 24, lineHeight: 46, writingDirection: 'rtl', marginTop: Spacing.two },
   verseCard: { borderRadius: 22, borderWidth: 1.5, padding: Spacing.three, gap: Spacing.three },
   verseHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

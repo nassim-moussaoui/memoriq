@@ -126,7 +126,9 @@
     "moreWaiting_one": "{{count}} review is still waiting, keep going?",
     "moreWaiting_other": "{{count}} reviews are still waiting, keep going?",
     "doneScience": "Your brain will now start forgetting… that's normal and planned: Memoriq will bring each verse back right before you forget it. That's spaced repetition.",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "chainsDone_one": "{{count}} passage recited in one go",
+    "chainsDone_other": "{{count}} passages recited in one go"
   },
   "onboarding": {
     "skip": "Skip",
@@ -322,5 +324,23 @@
     "sadaqaTitle": "Premium + Sadaqa",
     "sadaqaBody": "Pay a little more and gift a Memoriq Premium subscription to a student who can't afford one, somewhere in the world.",
     "close": "Close"
+  },
+  "chain": {
+    "badge": "Chain",
+    "range": "{{surah}}, verses {{from}} to {{to}}",
+    "title": "Recite the passage in one go",
+    "hint": "Chain the verses out loud without stopping. Tap a word only if you get stuck.",
+    "rateHint": "Look mostly at the transitions between verses: that is where memory slips.",
+    "show": "Show the passage",
+    "question": "How did the chain go?",
+    "redo": "Needs work",
+    "redoDesc": "Again at the end of the session",
+    "bumpy": "A few bumps",
+    "bumpyDesc": "Hesitations between verses",
+    "smooth": "Flawless",
+    "smoothDesc": "Fluent from start to end",
+    "practiceTitle": "Chain the surah",
+    "practiceDesc_one": "Recite {{count}} passage in one go",
+    "practiceDesc_other": "Recite {{count}} passages in one go"
   }
 }

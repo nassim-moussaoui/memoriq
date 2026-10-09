@@ -22,6 +22,56 @@ export type SessionItem = {
   kind: "new" | "review";
 };
 
+/**
+ * Serial recall of a whole passage (from..to): the verses are recited in one
+ * go, which trains the transitions between them, the real difficulty of
+ * hifz. A consolidation exercise: it does not change per-verse FSRS cards.
+ */
+export type ChainItem = {
+  surah: number;
+  from: number;
+  to: number;
+  kind: "chain";
+};
+
+export type QueueItem = SessionItem | ChainItem;
+
+/** Builds the session queue: new verses, then their chain, then reviews. */
+export function sessionQueue(plan: SessionPlan): QueueItem[] {
+  const chain: ChainItem[] =
+    plan.newItems.length >= 2
+      ? [
+          {
+            surah: plan.newItems[0].surah,
+            from: plan.newItems[0].ayah,
+            to: plan.newItems[plan.newItems.length - 1].ayah,
+            kind: "chain",
+          },
+        ]
+      : [];
+  return [...plan.newItems, ...chain, ...plan.reviewItems];
+}
+
+/**
+ * Chain practice on one surah (manzil): one chain per segment whose verses
+ * are all started; a short surah (7 verses or fewer) is chained whole.
+ */
+export function buildChainQueue(surahId: number): ChainItem[] {
+  const chapter = getChapter(surahId);
+  const started = getStartedAyahs(surahId);
+  if (chapter.versesCount <= 7) {
+    return started.size === chapter.versesCount && chapter.versesCount >= 2
+      ? [{ surah: surahId, from: 1, to: chapter.versesCount, kind: "chain" }]
+      : [];
+  }
+  return segmentSurah(chapter.versesCount)
+    .filter((seg) => {
+      for (let a = seg.start; a <= seg.end; a++) if (!started.has(a)) return false;
+      return true;
+    })
+    .map((seg) => ({ surah: surahId, from: seg.start, to: seg.end, kind: "chain" as const }));
+}
+
 export type SessionPlan = {
   newItems: SessionItem[];
   reviewItems: SessionItem[];
