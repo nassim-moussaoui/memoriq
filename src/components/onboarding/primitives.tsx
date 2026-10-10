@@ -203,8 +203,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /** Anchor of each glow (fractions of the screen), one per step of the flow. */
 const BLOBS = [
-  { color: 'tint', r: 0.75, xs: [0.1, 0.9, 0.85, 0.15, 0.2, 0.9, 0.1, 0.8, 0.5], ys: [0.12, 0.08, 0.3, 0.2, 0.05, 0.15, 0.25, 0.1, 0.1] },
-  { color: 'info', r: 0.6, xs: [0.95, 0.1, 0.2, 0.9, 0.85, 0.15, 0.9, 0.2, 0.9], ys: [0.75, 0.85, 0.9, 0.8, 0.7, 0.9, 0.85, 0.95, 0.8] },
+  { color: 'tint', r: 0.75, xs: [0.1, 0.9, 0.85, 0.15, 0.2, 0.9, 0.85, 0.1, 0.8, 0.5], ys: [0.12, 0.08, 0.3, 0.2, 0.05, 0.15, 0.1, 0.25, 0.1, 0.1] },
+  { color: 'info', r: 0.6, xs: [0.95, 0.1, 0.2, 0.9, 0.85, 0.15, 0.1, 0.9, 0.2, 0.9], ys: [0.75, 0.85, 0.9, 0.8, 0.7, 0.9, 0.8, 0.85, 0.95, 0.8] },
 ] as const;
 
 function Blob({

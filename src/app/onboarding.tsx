@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +31,8 @@ import {
   requestReminderPermission,
   scheduleDailyReminder,
 } from '@/lib/notifications';
-import { getVerses } from '@/lib/quran';
+import { getChapter, getVerses } from '@/lib/quran';
+import { markSurahsKnown } from '@/lib/srs/known';
 import { budgetFor } from '@/lib/srs/queue';
 import { startingSurahForGoal, useAppStore, type Goal, type ReviewMoment } from '@/lib/store';
 
@@ -41,6 +43,7 @@ const STEPS = [
   'recall',
   'sunna',
   'goal',
+  'known',
   'time',
   'moment',
   'plan',
@@ -48,6 +51,9 @@ const STEPS = [
 type StepId = (typeof STEPS)[number];
 
 const GOAL_STEP = STEPS.indexOf('goal');
+/** Free surahs offered on the "already known" step: Al-Fatiha, then Juz' 'Amma from An-Nas. */
+const JUZ_AMMA_IDS = Array.from({ length: 37 }, (_, i) => 114 - i);
+const KNOWN_CHOICES = [1, ...JUZ_AMMA_IDS];
 const PLAN_STEP = STEPS.indexOf('plan');
 
 /** Surah 54, verse 17: "And We have certainly made the Qur'an easy for remembrance". */
@@ -97,6 +103,7 @@ export default function OnboardingScreen() {
     alreadyCompleted ? storedMoment : 'evening',
   );
   const [reminderOn, setReminderOn] = useState(alreadyCompleted ? remindersEnabled : true);
+  const [knownSurahs, setKnownSurahs] = useState<ReadonlySet<number>>(new Set());
 
   // Keep a custom reminder time unless the moment itself changed.
   const reminderTime =
@@ -126,7 +133,10 @@ export default function OnboardingScreen() {
   const finish = async () => {
     if (finishing) return;
     setFinishing(true);
-    completeOnboarding({ minutesPerDay, goal, reviewMoment });
+    // Surahs ticked as already known go straight to review (and are skipped
+    // when picking the first surah to learn).
+    if (knownSurahs.size > 0) markSurahsKnown([...knownSurahs]);
+    completeOnboarding({ minutesPerDay, goal, reviewMoment, known: [...knownSurahs] });
     try {
       if (reminderOn) {
         const granted = await requestReminderPermission();
@@ -295,6 +305,73 @@ export default function OnboardingScreen() {
           </StepScroll>
         );
       }
+      case 'known': {
+        const allJuzAmma = JUZ_AMMA_IDS.every((id) => knownSurahs.has(id));
+        const toggle = (id: number) => {
+          void Haptics.selectionAsync();
+          const next = new Set(knownSurahs);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          setKnownSurahs(next);
+        };
+        return (
+          <StepScroll>
+            <StepHeader
+              eyebrow={t('onboarding.planEyebrow', { n: 2 })}
+              title={t('onboarding.knownQuestion')}
+              body={t('onboarding.knownBody')}
+              align="left"
+            />
+            <Animated.View entering={enterUp(3)} style={styles.knownBar}>
+              <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                {knownSurahs.size > 0
+                  ? t('onboarding.knownCount', { count: knownSurahs.size })
+                  : t('onboarding.knownNone')}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  const next = new Set(knownSurahs);
+                  JUZ_AMMA_IDS.forEach((id) => (allJuzAmma ? next.delete(id) : next.add(id)));
+                  setKnownSurahs(next);
+                }}
+                style={[styles.knownAll, { backgroundColor: allJuzAmma ? theme.tint : theme.tintSoft }]}>
+                <ThemedText style={[styles.knownAllText, { color: allJuzAmma ? '#ffffff' : theme.tint }]}>
+                  {allJuzAmma ? t('onboarding.knownAllOff') : t('onboarding.knownAll')}
+                </ThemedText>
+              </Pressable>
+            </Animated.View>
+            <Animated.View entering={enterUp(4)} style={styles.chips}>
+              {KNOWN_CHOICES.map((id) => {
+                const on = knownSurahs.has(id);
+                const chapter = getChapter(id);
+                return (
+                  <Pressable
+                    key={id}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    onPress={() => toggle(id)}
+                    style={({ pressed }) => [
+                      styles.chip,
+                      {
+                        backgroundColor: on ? theme.tint : theme.backgroundElement,
+                        transform: [{ scale: pressed ? 0.95 : 1 }],
+                      },
+                    ]}>
+                    <ThemedText style={[styles.chipNum, { color: on ? '#ffffffcc' : theme.textSecondary }]}>
+                      {id}
+                    </ThemedText>
+                    <ThemedText style={[styles.chipName, { color: on ? '#ffffff' : theme.text }]}>
+                      {chapter.nameSimple}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </Animated.View>
+          </StepScroll>
+        );
+      }
       case 'time': {
         const times: { value: 5 | 10 | 20; icon: IconName }[] = [
           { value: 5, icon: 'leaf-outline' },
@@ -305,7 +382,7 @@ export default function OnboardingScreen() {
         return (
           <StepScroll>
             <StepHeader
-              eyebrow={t('onboarding.planEyebrow', { n: 2 })}
+              eyebrow={t('onboarding.planEyebrow', { n: 3 })}
               title={t('onboarding.timeQuestion')}
               body={t('onboarding.timeBody')}
               align="left"
@@ -345,7 +422,7 @@ export default function OnboardingScreen() {
         return (
           <StepScroll>
             <StepHeader
-              eyebrow={t('onboarding.planEyebrow', { n: 3 })}
+              eyebrow={t('onboarding.planEyebrow', { n: 4 })}
               title={t('onboarding.momentQuestion')}
               body={t('onboarding.momentBody')}
               align="left"
@@ -370,7 +447,7 @@ export default function OnboardingScreen() {
         return (
           <StepScroll centered>
             <PlanBuilder
-              surahId={alreadyCompleted ? activeSurah : startingSurahForGoal(goal)}
+              surahId={alreadyCompleted ? activeSurah : startingSurahForGoal(goal, knownSurahs)}
               continuing={alreadyCompleted}
               minutesPerDay={minutesPerDay}
               reminderTime={reminderTime}
@@ -494,6 +571,20 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
   },
   outcomeText: { flex: 1 },
+  knownBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  knownAll: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  knownAllText: { fontSize: 13.5, lineHeight: 18, fontWeight: 700 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  chipNum: { fontSize: 12, lineHeight: 16, fontWeight: 700, fontVariant: ['tabular-nums'] },
+  chipName: { fontSize: 14, lineHeight: 18, fontWeight: 600 },
   footer: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.three, paddingTop: Spacing.two },
 });
 

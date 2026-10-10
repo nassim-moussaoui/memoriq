@@ -194,7 +194,7 @@
     "hadith4Narrator": "D'après 'Aïcha (qu'Allah l'agrée)",
     "hadith4Source": "Rapporté par Al-Bukhari et Muslim",
     "hadith4Method": "Même si un verset par jour semble peu, la régularité l'emporte sur la quantité.",
-    "planEyebrow": "Ton plan · {{n}}/3",
+    "planEyebrow": "Ton plan · {{n}}/4",
     "goalQuestion": "Quel est ton objectif ?",
     "goal_juzamma": "Mémoriser Juz' 'Amma",
     "goal_juzammaDesc": "Les sourates courtes, parfaites pour commencer",
@@ -235,7 +235,14 @@
     "statNew": "nouveaux versets max",
     "statReviews": "révisions max",
     "reminderTitle": "Rappel quotidien",
-    "reminderDesc": "Chaque jour à {{time}}"
+    "reminderDesc": "Chaque jour à {{time}}",
+    "knownQuestion": "Tu connais déjà des sourates ?",
+    "knownBody": "Coche celles que tu connais par cœur : elles passeront directement en révision, et tu n'auras pas à les réapprendre.",
+    "knownAll": "Tout le Juz' 'Amma",
+    "knownAllOff": "Tout décocher",
+    "knownNone": "Aucune pour l’instant ? On commence ensemble.",
+    "knownCount_one": "{{count}} sourate cochée",
+    "knownCount_other": "{{count}} sourates cochées"
   },
   "stats": {
     "title": "Progrès",

@@ -194,7 +194,7 @@
     "hadith4Narrator": "On the authority of 'A'isha (may Allah be pleased with her)",
     "hadith4Source": "Reported by Al-Bukhari and Muslim",
     "hadith4Method": "Even if one verse a day seems little, regularity wins over quantity.",
-    "planEyebrow": "Your plan · {{n}}/3",
+    "planEyebrow": "Your plan · {{n}}/4",
     "goalQuestion": "What is your goal?",
     "goal_juzamma": "Memorize Juz' 'Amma",
     "goal_juzammaDesc": "Short surahs, perfect to start with",
@@ -235,7 +235,14 @@
     "statNew": "new verses max",
     "statReviews": "reviews max",
     "reminderTitle": "Daily reminder",
-    "reminderDesc": "Every day at {{time}}"
+    "reminderDesc": "Every day at {{time}}",
+    "knownQuestion": "Do you already know some surahs?",
+    "knownBody": "Tick the ones you know by heart: they go straight to review, so you will not learn them again.",
+    "knownAll": "All of Juz' 'Amma",
+    "knownAllOff": "Untick all",
+    "knownNone": "None yet? We start together.",
+    "knownCount_one": "{{count}} surah ticked",
+    "knownCount_other": "{{count}} surahs ticked"
   },
   "stats": {
     "title": "Progress",

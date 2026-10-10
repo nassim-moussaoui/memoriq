@@ -16,15 +16,28 @@ export type ReviewMoment = "morning" | "afterPrayer" | "evening";
  * (An-Nas), prayer starts with the one most recited in salat (Al-Ikhlas), and
  * full hifz follows the structured order from the top of Juz' 'Amma.
  */
-export function startingSurahForGoal(goal: Goal): number {
+const JUZ_AMMA_DESC = Array.from({ length: 37 }, (_, i) => 114 - i); // 114 down to 78
+
+/** Learning order per goal: where a learner with that goal naturally starts. */
+function surahOrderForGoal(goal: Goal): number[] {
   switch (goal) {
     case "prayer":
-      return 112;
+      // The short surahs most recited in salat first.
+      return [112, 113, 114, ...JUZ_AMMA_DESC.filter((id) => id < 112), 1];
     case "hifz":
-      return 78;
+      return [...JUZ_AMMA_DESC].reverse().concat(1);
     default:
-      return 114;
+      return [...JUZ_AMMA_DESC, 1];
   }
+}
+
+/**
+ * The first surah to learn for a goal, skipping surahs the learner already
+ * knows (ticked during the onboarding). Falls back to the goal's usual start.
+ */
+export function startingSurahForGoal(goal: Goal, known: ReadonlySet<number> = new Set()): number {
+  const order = surahOrderForGoal(goal);
+  return order.find((id) => !known.has(id)) ?? order[0];
 }
 
 type AppState = {
@@ -70,6 +83,8 @@ type AppState = {
     minutesPerDay: 5 | 10 | 20;
     goal: Goal;
     reviewMoment: ReviewMoment;
+    /** Surahs ticked as already known, skipped when picking the first one. */
+    known?: number[];
   }) => void;
   setActiveSurah: (surah: number) => void;
   setRemindersEnabled: (v: boolean) => void;
@@ -113,7 +128,7 @@ export const useAppStore = create<AppState>()(
       lastPushedLogId: 0,
       lastSyncAt: null,
 
-      completeOnboarding: ({ minutesPerDay, goal, reviewMoment }) =>
+      completeOnboarding: ({ minutesPerDay, goal, reviewMoment, known = [] }) =>
         set((state) => ({
           onboardingCompleted: true,
           minutesPerDay,
@@ -123,7 +138,7 @@ export const useAppStore = create<AppState>()(
           // never moves the user off the surah they are working on.
           activeSurah: state.onboardingCompleted
             ? state.activeSurah
-            : startingSurahForGoal(goal),
+            : startingSurahForGoal(goal, new Set(known)),
         })),
       setActiveSurah: (activeSurah) => set({ activeSurah }),
       setRemindersEnabled: (remindersEnabled) => set({ remindersEnabled }),
