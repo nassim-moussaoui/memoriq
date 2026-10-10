@@ -96,6 +96,7 @@ a {
 h1,
 h2,
 h3 {
+  text-wrap: balance;
   line-height: 1.15;
   letter-spacing: -0.02em;
   margin: 0;
@@ -103,13 +104,14 @@ h3 {
 
 p {
   margin: 0;
+  text-wrap: pretty;
 }
 
 .container {
   width: 100%;
   max-width: var(--max);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 clamp(20px, 4vw, 32px);
 }
 
 .arabic {
@@ -128,14 +130,14 @@ p {
 }
 
 .section {
-  padding: 96px 0;
+  padding: clamp(64px, 10vw, 96px) 0;
 }
 
 .section-head {
   display: grid;
   gap: 12px;
   max-width: 680px;
-  margin-bottom: 48px;
+  margin-bottom: clamp(32px, 5vw, 48px);
 }
 
 .section-head.center {
@@ -145,7 +147,7 @@ p {
 }
 
 .section-head h2 {
-  font-size: clamp(30px, 4.4vw, 44px);
+  font-size: clamp(28px, 4.4vw, 44px);
   font-weight: 800;
 }
 
@@ -220,15 +222,6 @@ p {
   }
 }
 
-@media (max-width: 720px) {
-  .section {
-    padding: 72px 0;
-  }
-  .section-head {
-    margin-bottom: 32px;
-  }
-}
-
 /* Cards that lift on hover with a soft light following the pointer
    (--mx/--my are set by the script in Base.astro). */
 .spot {
@@ -239,7 +232,7 @@ p {
     box-shadow 0.35s ease;
 }
 .spot::before {
-  content: ;
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;

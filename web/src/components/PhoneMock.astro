@@ -438,6 +438,36 @@ const ratings = [
     background: var(--tint-soft);
     box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--tint) 60%, transparent);
   }
+  /* Stacked under the hero copy: a smaller phone, so it does not fill the screen. */
+  @media (max-width: 960px) {
+    .phone {
+      width: min(300px, 74vw);
+      border-radius: 44px;
+      padding: 10px;
+    }
+    .screen {
+      border-radius: 35px;
+    }
+  }
+  @media (max-width: 640px) {
+    .phone {
+      width: min(280px, 76vw);
+      aspect-ratio: 9 / 17.5;
+    }
+    .screen {
+      padding: 40px 14px 16px;
+    }
+    .ratings {
+      gap: 6px;
+    }
+    .rating {
+      padding: 8px 10px;
+      border-radius: 14px;
+    }
+    .rating span {
+      font-size: 10px;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .phone-wrap {
       animation: none;

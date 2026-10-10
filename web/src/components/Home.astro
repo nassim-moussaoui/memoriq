@@ -35,6 +35,8 @@ const reviews = [
 ];
 const spacedPath = `M${reviews.flatMap((r, i) => decay(r.day, reviews[i + 1]?.day ?? 30, r.s)).join(' L')}`;
 
+// French punctuation (? ! : ;) never wraps alone onto the next line.
+const nbsp = (text: string) => text.replace(/ ([?!:;])/g, '\u00a0$1');
 const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as const;
 const titleWords = t.hero.title.split(' ');
 const accentWords = t.hero.titleAccent.split(' ');
@@ -265,15 +267,17 @@ const sparkles = [
 </section>
 
 <section class="section sadaqa" id="sadaqa">
-  <div class="container sadaqa-card reveal">
-    <div class="sadaqa-copy">
-      <span class="eyebrow gold">{t.sadaqa.eyebrow}</span>
-      <h2>{t.sadaqa.title}</h2>
-      <p>{t.sadaqa.body}</p>
+  <div class="container">
+    <div class="sadaqa-card reveal">
+      <div class="sadaqa-copy">
+        <span class="eyebrow gold">{t.sadaqa.eyebrow}</span>
+        <h2>{t.sadaqa.title}</h2>
+        <p>{t.sadaqa.body}</p>
+      </div>
+      <ul class="sadaqa-points">
+        {t.sadaqa.points.map((p) => <li>{p}</li>)}
+      </ul>
     </div>
-    <ul class="sadaqa-points">
-      {t.sadaqa.points.map((p) => <li>{p}</li>)}
-    </ul>
   </div>
 </section>
 
@@ -287,7 +291,7 @@ const sparkles = [
       {
         t.faq.items.map((item) => (
           <details class="reveal">
-            <summary>{item.q}</summary>
+            <summary>{nbsp(item.q)}</summary>
             <p>{item.a}</p>
           </details>
         ))
@@ -297,16 +301,18 @@ const sparkles = [
 </section>
 
 <section class="final">
-  <div class="container final-card reveal">
-    <div class="sparkles" aria-hidden="true">
-      {sparkles.map((sp) => (
-        <span style={`left:${sp.x}%; top:${sp.y}%; --s:${sp.size}px; --d:${sp.delay}s; --t:${sp.dur}s`}></span>
-      ))}
+  <div class="container">
+    <div class="final-card reveal">
+      <div class="sparkles" aria-hidden="true">
+        {sparkles.map((sp) => (
+          <span style={`left:${sp.x}%; top:${sp.y}%; --s:${sp.size}px; --d:${sp.delay}s; --t:${sp.dur}s`}></span>
+        ))}
+      </div>
+      <img src="/brand/memoriq-logo.svg" alt="" width="72" height="72" />
+      <h2>{t.final.title}</h2>
+      <p>{t.final.body}</p>
+      <span class="store-badge on-dark" aria-disabled="true">{t.appStoreSoon}</span>
     </div>
-    <img src="/brand/memoriq-logo.svg" alt="" width="72" height="72" />
-    <h2>{t.final.title}</h2>
-    <p>{t.final.body}</p>
-    <span class="store-badge on-dark" aria-disabled="true">{t.appStoreSoon}</span>
   </div>
 </section>
 
@@ -315,7 +321,7 @@ const sparkles = [
   .hero {
     position: relative;
     overflow: hidden;
-    padding: 72px 0 40px;
+    padding: clamp(40px, 7vw, 72px) 0 40px;
   }
   .hero-bg {
     position: absolute;
@@ -418,7 +424,7 @@ const sparkles = [
     justify-items: start;
   }
   h1 {
-    font-size: clamp(42px, 7vw, 76px);
+    font-size: clamp(40px, 6.4vw, 76px);
     font-weight: 850;
     letter-spacing: -0.035em;
   }
@@ -426,7 +432,7 @@ const sparkles = [
     color: var(--tint);
   }
   .lead {
-    font-size: 19px;
+    font-size: clamp(17px, 1.6vw, 19px);
     color: var(--muted);
     max-width: 540px;
   }
@@ -454,13 +460,15 @@ const sparkles = [
   }
   .free-note {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     font-size: 15px;
     font-weight: 600;
     color: var(--tint);
   }
   .free-note .dot {
+    flex: none;
+    margin-top: 0.55em;
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -551,6 +559,7 @@ const sparkles = [
     padding: 4px 10px;
   }
   .chart {
+    min-width: 0;
     background: var(--bg);
     border-radius: 18px;
     padding: 12px;
@@ -665,7 +674,7 @@ const sparkles = [
   }
   .verse {
     position: relative;
-    margin: 0 auto 56px;
+    margin: 0 auto clamp(36px, 6vw, 56px);
     max-width: 760px;
     text-align: center;
     display: grid;
@@ -686,11 +695,12 @@ const sparkles = [
     transform: none;
   }
   .verse-ar {
-    font-size: clamp(30px, 4.6vw, 44px);
+    font-size: clamp(26px, 4.6vw, 44px);
+    text-wrap: balance;
     color: #ffffff;
   }
   .verse-tr {
-    font-size: 18px;
+    font-size: clamp(16px, 1.8vw, 18px);
     font-style: italic;
     color: rgba(241, 247, 244, 0.85);
   }
@@ -746,9 +756,9 @@ const sparkles = [
   .sunna-body {
     position: relative;
     max-width: 680px;
-    margin: 48px auto 0;
+    margin: clamp(32px, 5vw, 48px) auto 0;
     text-align: center;
-    font-size: 18px;
+    font-size: clamp(16px, 1.8vw, 18px);
     color: rgba(241, 247, 244, 0.9);
   }
 
@@ -881,7 +891,7 @@ const sparkles = [
     color: var(--muted);
   }
   .price {
-    font-size: 46px;
+    font-size: clamp(38px, 5vw, 46px);
     font-weight: 850;
     letter-spacing: -0.03em;
     line-height: 1.1;
@@ -943,10 +953,10 @@ const sparkles = [
   .sadaqa-card {
     display: grid;
     grid-template-columns: 1.2fr 0.8fr;
-    gap: 40px;
+    gap: clamp(24px, 4vw, 40px);
     align-items: center;
-    padding: 48px;
-    border-radius: 32px;
+    padding: clamp(24px, 5vw, 48px);
+    border-radius: clamp(24px, 3vw, 32px);
     background: var(--gold-soft);
   }
   .sadaqa-copy {
@@ -982,7 +992,7 @@ const sparkles = [
   .faq-wrap {
     display: grid;
     grid-template-columns: 0.8fr 1.2fr;
-    gap: 48px;
+    gap: 0 48px;
   }
   .faq {
     display: grid;
@@ -1023,7 +1033,7 @@ const sparkles = [
 
   /* Final */
   .final {
-    padding: 0 0 96px;
+    padding: 0 0 clamp(64px, 10vw, 96px);
   }
   .sparkles {
     position: absolute;
@@ -1058,8 +1068,8 @@ const sparkles = [
     justify-items: center;
     gap: 16px;
     text-align: center;
-    padding: 64px 24px;
-    border-radius: 36px;
+    padding: clamp(48px, 8vw, 64px) 24px;
+    border-radius: clamp(24px, 4vw, 36px);
     background: linear-gradient(160deg, #0d7e5f 0%, #054c38 100%);
     color: #ffffff;
   }
@@ -1074,8 +1084,9 @@ const sparkles = [
     font-weight: 850;
   }
   .final-card p {
+    max-width: 520px;
     color: rgba(255, 255, 255, 0.85);
-    font-size: 18px;
+    font-size: clamp(16px, 1.8vw, 18px);
   }
 
   @keyframes float-logo {
@@ -1092,33 +1103,116 @@ const sparkles = [
     .sadaqa-card {
       grid-template-columns: 1fr;
     }
-    .hero {
-      padding-top: 48px;
+    .hero-grid {
+      gap: 40px;
     }
-    .science-grid,
-    .features {
-      grid-template-columns: 1fr 1fr;
-    }
+    .features,
     .steps {
       grid-template-columns: 1fr 1fr;
     }
+    /* One card per row, the chart beside its text: no orphan third card. */
+    .science-grid {
+      grid-template-columns: 1fr;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .science-card {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      column-gap: 28px;
+      align-items: center;
+    }
+    .science-card .chart {
+      grid-row: span 3;
+      margin: 0;
+    }
+    .science-card > :not(.chart) {
+      grid-column: 2;
+    }
   }
   @media (max-width: 640px) {
-    .science-grid,
     .features,
     .steps,
     .hadith-grid,
     .plans {
       grid-template-columns: 1fr;
     }
-    .sadaqa-card {
-      padding: 28px;
+    /* The CTAs stack at full width, the same size. */
+    .hero-copy {
+      justify-items: stretch;
+    }
+    .hero-ctas {
+      display: grid;
+    }
+    .hero-ctas > * {
+      justify-content: center;
+    }
+    .strip {
+      margin-top: 40px;
+    }
+    .science-grid {
+      gap: 16px;
+    }
+    .science-card {
+      grid-template-columns: 1fr;
+      padding: 18px 18px 22px;
+    }
+    .science-card .chart {
+      grid-row: auto;
+      margin-bottom: 6px;
+    }
+    .science-card > :not(.chart) {
+      grid-column: auto;
+      margin-inline: 4px;
+    }
+    .science-card h3 {
+      font-size: 19px;
     }
     .hadith {
       padding: 22px;
     }
     .plan {
       padding: 26px;
+    }
+    /* Steps and features read as compact rows: marker on the left. */
+    .steps,
+    .features {
+      gap: 12px;
+    }
+    .step,
+    .feature {
+      grid-template-columns: auto 1fr;
+      column-gap: 16px;
+      row-gap: 4px;
+      padding: 20px;
+    }
+    .step-num,
+    .feature-icon {
+      grid-row: span 2;
+      align-self: start;
+    }
+    .step-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      margin: 4px 4px 0;
+    }
+    .feature-icon {
+      margin: 0;
+    }
+    .step h3,
+    .feature h3 {
+      font-size: 17.5px;
+    }
+    .step p,
+    .feature p {
+      font-size: 15px;
+    }
+    .sadaqa-points li {
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+    details {
+      padding: 2px 18px;
     }
   }
 </style>
