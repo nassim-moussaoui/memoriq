@@ -322,8 +322,8 @@ const sparkles = [
   .blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(60px);
-    opacity: 0.55;
+    opacity: 0.7;
+    will-change: transform;
     animation: drift 18s ease-in-out infinite alternate;
   }
   .blob-a {
@@ -331,14 +331,14 @@ const sparkles = [
     height: 420px;
     right: -60px;
     top: -80px;
-    background: color-mix(in srgb, var(--tint) 45%, transparent);
+    background: radial-gradient(circle, color-mix(in srgb, var(--tint) 38%, transparent), transparent 68%);
   }
   .blob-b {
     width: 320px;
     height: 320px;
     left: -80px;
     bottom: -60px;
-    background: color-mix(in srgb, var(--gold) 35%, transparent);
+    background: radial-gradient(circle, color-mix(in srgb, var(--gold) 30%, transparent), transparent 68%);
     animation-duration: 22s;
     animation-direction: alternate-reverse;
   }
@@ -383,6 +383,7 @@ const sparkles = [
     top: -160px;
     color: var(--tint);
     opacity: 0.09;
+    will-change: transform;
     animation: spin 160s linear infinite;
   }
   @keyframes spin-center {
@@ -470,8 +471,24 @@ const sparkles = [
     padding: 20px 0 0;
     border-top: 1px solid var(--border);
     overflow: hidden;
-    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .strip::before,
+  .strip::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12%;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .strip::before {
+    left: 0;
+    background: linear-gradient(90deg, var(--bg), transparent);
+  }
+  .strip::after {
+    right: 0;
+    background: linear-gradient(-90deg, var(--bg), transparent);
   }
   .marquee {
     display: flex;
@@ -484,6 +501,7 @@ const sparkles = [
     font-weight: 600;
     font-size: 15px;
     white-space: nowrap;
+    will-change: transform;
     animation: marquee 32s linear infinite;
   }
   .strip:hover .marquee {
@@ -629,6 +647,7 @@ const sparkles = [
     color: #f1f7f4;
   }
   .sunna-bg :global(.sunna-star) {
+    will-change: transform;
     animation: spin-center 200s linear infinite;
     position: absolute;
     width: 900px;
@@ -656,17 +675,14 @@ const sparkles = [
     display: inline-block;
     margin-inline-end: 0.28em;
     opacity: 0;
-    filter: blur(6px);
     transform: translateY(10px);
     transition:
       opacity 0.8s ease,
-      filter 0.8s ease,
       transform 0.8s ease;
     transition-delay: var(--d);
   }
   :global(.verse.is-visible) .vw {
     opacity: 1;
-    filter: none;
     transform: none;
   }
   .verse-ar {
