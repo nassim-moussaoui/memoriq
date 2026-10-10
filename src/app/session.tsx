@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInRight, FadeOut, ZoomIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FlowProgress } from '@/components/ui/flow-progress';
@@ -27,7 +27,7 @@ import { getReciter } from '@/lib/audio';
 import { prefetchAyahs } from '@/lib/audio-cache';
 import { describeNextDue, nextDueKey } from '@/lib/next-due';
 import { getChapter, getVerses } from '@/lib/quran';
-import { countDue, getItem, getNextDueAt, logReview, saveItem } from '@/lib/srs/db';
+import { countDue, getItem, getNextDueAt, getStartedAyahs, getTotals, logReview, saveItem } from '@/lib/srs/db';
 import {
   buildChainQueue,
   buildReviewAheadPlan,
@@ -49,6 +49,10 @@ import { useTheme } from '@/hooks/use-theme';
  */
 type Phase = 'listen' | 'recall' | 'rate';
 type Result = { kind: SessionItem['kind']; firstGrade: Grade };
+
+/** Learned-verse counts and streak lengths worth a medal. */
+const VERSE_MILESTONES = [1, 10, 25, 50, 100, 250, 500, 1000, 2000, 6236];
+const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100, 200, 365];
 
 const itemKey = (item: QueueItem) =>
   item.kind === 'chain' ? `chain:${item.surah}:${item.from}-${item.to}` : `${item.surah}:${item.ayah}`;
@@ -135,6 +139,8 @@ export default function SessionScreen() {
   const loopRef = useRef(true);
   const [results, setResults] = useState<Record<string, Result>>({});
   const [chainResults, setChainResults] = useState<Record<string, ChainOutcome>>({});
+  // Short encouragement floating over the next verse after a good answer.
+  const [cheer, setCheer] = useState<{ key: number; text: string } | null>(null);
 
   const item = queue[index];
   const finished = index >= queue.length;
@@ -182,16 +188,43 @@ export default function SessionScreen() {
     void prefetchAyahs(getReciter(reciterId), verses);
   }, [initialQueue, reciterId]);
 
+  // What the learner had before this session, to spot what it achieved:
+  // surahs completed, verse and streak milestones.
+  const before = useMemo(
+    () => ({ started: getTotals().startedVerses, streak: useAppStore.getState().streak }),
+    [],
+  );
+  const learningSurahs = useMemo(
+    () => [...new Set(initialQueue.filter((q) => q.kind === 'new').map((q) => q.surah))],
+    [initialQueue],
+  );
+
   // Snapshot of what is left once the session ends: read once, after
   // registerSessionDone has already run.
   const doneStats = useMemo(() => {
     if (!finished) return null;
     const nextAt = getNextDueAt();
+    const startedNow = getTotals().startedVerses;
+    const streakNow = useAppStore.getState().streak;
     return {
       remainingDue: countDue(),
       nextDue: nextAt ? describeNextDue(nextAt, i18n.language) : null,
+      completedSurahs: learningSurahs
+        .filter((id) => getStartedAyahs(id).size >= getChapter(id).versesCount)
+        .map((id) => {
+          const chapter = getChapter(id);
+          return {
+            arabic: chapter.nameArabic,
+            name: chapter.nameSimple,
+            verses: chapter.versesCount,
+          };
+        }),
+      versesMilestone:
+        VERSE_MILESTONES.filter((m) => before.started < m && startedNow >= m).pop() ?? null,
+      streakMilestone:
+        streakNow > before.streak && STREAK_MILESTONES.includes(streakNow) ? streakNow : null,
     };
-  }, [finished, i18n.language]);
+  }, [before, finished, i18n.language, learningSurahs]);
 
   // Interval preview for the rating cards. Memoized: FSRS fuzz would make
   // the values jitter on every re-render otherwise.
@@ -246,6 +279,9 @@ export default function SessionScreen() {
             }
             remainingDue={doneStats?.remainingDue ?? 0}
             reminderOffer={remindersEnabled ? null : DEFAULT_REMINDER_TIMES[reviewMoment]}
+            completedSurahs={doneStats?.completedSurahs}
+            versesMilestone={doneStats?.versesMilestone}
+            streakMilestone={doneStats?.streakMilestone}
             onContinue={() => router.replace('/session')}
             onEnableReminders={() => void enableReminders()}
             onClose={() => router.back()}
@@ -323,6 +359,13 @@ export default function SessionScreen() {
   const fullyShown = phase !== 'recall';
 
   const onRate = (grade: Grade) => {
+    if (grade === Rating.Good || grade === Rating.Easy) {
+      const phrases = t('celebrate.cheers', { returnObjects: true }) as string[];
+      const text = phrases[Math.floor(Math.random() * phrases.length)];
+      const key = Date.now();
+      setCheer({ key, text });
+      setTimeout(() => setCheer((c) => (c?.key === key ? null : c)), 1300);
+    }
     const existing = getItem(item.surah, item.ayah);
     const card = existing?.card ?? newCard();
     saveItem(item.surah, item.ayah, rate(card, grade));
@@ -385,6 +428,16 @@ export default function SessionScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {topBar}
+        {cheer ? (
+          <Animated.View
+            key={cheer.key}
+            pointerEvents="none"
+            entering={ZoomIn.springify().damping(13)}
+            exiting={FadeOut.duration(250)}
+            style={[styles.cheer, { backgroundColor: theme.tint }]}>
+            <ThemedText style={styles.cheerText}>{cheer.text}</ThemedText>
+          </Animated.View>
+        ) : null}
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Animated.View key={`${index}`} entering={FadeInRight.duration(320)} style={styles.itemBlock}>
@@ -571,6 +624,16 @@ const styles = StyleSheet.create({
   },
   peekCount: { fontSize: 12, lineHeight: 16, paddingHorizontal: Spacing.one },
   footer: { paddingTop: Spacing.two, paddingBottom: Spacing.three },
+  cheer: {
+    position: 'absolute',
+    top: 64,
+    alignSelf: 'center',
+    zIndex: 20,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 8,
+  },
+  cheerText: { color: '#ffffff', fontSize: 15, lineHeight: 20, fontWeight: 800 },
 });
 
 // A render error shows a recovery screen instead of a blank one.

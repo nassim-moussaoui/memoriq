@@ -511,5 +511,24 @@
     "leaveBody": "You will lose your place in line.",
     "leaveCta": "Leave the list",
     "fineprint": "The gift is a one-time in-app purchase: it is not a donation to a charity and is not tax deductible."
+  },
+  "celebrate": {
+    "surahTitle": "Surah complete!",
+    "surahBody_one": "You learned all of {{name}} ({{count}} verse). May Allah engrave it in your heart.",
+    "surahBody_other": "You learned all of {{name}} ({{count}} verses). May Allah engrave it in your heart.",
+    "moreSurahs_one": "And {{count}} more surah completed!",
+    "moreSurahs_other": "And {{count}} more surahs completed!",
+    "versesMilestone_one": "Your first verse learned!",
+    "versesMilestone_other": "{{count}} verses learned!",
+    "streakMilestone_one": "{{count}} day in a row!",
+    "streakMilestone_other": "{{count}} days in a row!",
+    "cheers": [
+      "MashaAllah!",
+      "Well done!",
+      "Barak Allahu fik!",
+      "Excellent!",
+      "Keep it up!",
+      "Great!"
+    ]
   }
 }

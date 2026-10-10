@@ -511,5 +511,24 @@
     "leaveBody": "Tu perdras ta place dans la file.",
     "leaveCta": "Quitter la liste",
     "fineprint": "Le cadeau est un achat intégré unique : il n'est ni un don à une association, ni déductible des impôts."
+  },
+  "celebrate": {
+    "surahTitle": "Sourate terminée !",
+    "surahBody_one": "Tu as appris toute la sourate {{name}} ({{count}} verset). Qu'Allah la grave dans ton cœur.",
+    "surahBody_other": "Tu as appris toute la sourate {{name}} ({{count}} versets). Qu'Allah la grave dans ton cœur.",
+    "moreSurahs_one": "Et {{count}} autre sourate terminée !",
+    "moreSurahs_other": "Et {{count}} autres sourates terminées !",
+    "versesMilestone_one": "Ton premier verset appris !",
+    "versesMilestone_other": "{{count}} versets appris !",
+    "streakMilestone_one": "{{count}} jour de suite !",
+    "streakMilestone_other": "{{count}} jours de suite !",
+    "cheers": [
+      "MashaAllah !",
+      "Bien joué !",
+      "Barak Allahu fik !",
+      "Excellent !",
+      "Continue comme ça !",
+      "Bravo !"
+    ]
   }
 }
