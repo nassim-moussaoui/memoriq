@@ -1,4 +1,4 @@
-import { Platform } from "react-native";
+import { LogBox, Platform } from "react-native";
 import Purchases, {
   LOG_LEVEL,
   PRODUCT_CATEGORY,
@@ -38,6 +38,11 @@ function applyCustomerInfo(info: CustomerInfo) {
 /** Configures the SDK once at launch (no-op on web or without a key). */
 export function initPurchases(): void {
   if (configured || !apiKey || Platform.OS === "web") return;
+  if (__DEV__) {
+    // Benign: after a Fast Refresh the native side still emits log events
+    // for a moment while the JS listener is being re-registered.
+    LogBox.ignoreLogs(["Sending `Purchases-LogHandlerEvent` with no listeners registered"]);
+  }
   try {
     // RevenueCat logs a cancelled purchase at error level, which raises the
     // red dev overlay for an outcome the app handles normally: in dev, show
