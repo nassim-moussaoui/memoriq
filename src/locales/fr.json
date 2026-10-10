@@ -362,7 +362,10 @@
     "errorTitle": "L'achat n'a pas abouti",
     "sadaqaTitle": "Offrir un an de Premium",
     "sadaqaBody": "À un étudiant qui ne peut pas se l'offrir",
-    "close": "Fermer"
+    "close": "Fermer",
+    "pendingTitle": "Paiement reçu",
+    "pendingBody": "Ton paiement a bien été pris en compte, mais Premium ne s'est pas encore activé. Touche « Restaurer mes achats » pour réessayer. Si rien ne change, contacte-nous : ton achat est conservé.",
+    "contactSupport": "Contacter le support"
   },
   "chain": {
     "badge": "Enchaînement",

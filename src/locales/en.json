@@ -362,7 +362,10 @@
     "errorTitle": "The purchase did not go through",
     "sadaqaTitle": "Gift a year of Premium",
     "sadaqaBody": "To a student who cannot afford it",
-    "close": "Close"
+    "close": "Close",
+    "pendingTitle": "Payment received",
+    "pendingBody": "Your payment went through, but Premium has not turned on yet. Tap \"Restore purchases\" to try again. If nothing changes, contact us: your purchase is kept.",
+    "contactSupport": "Contact support"
   },
   "chain": {
     "badge": "Chain",

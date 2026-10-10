@@ -144,10 +144,18 @@ export default function PaywallScreen() {
     if (!selected) return;
     setBusy('buy');
     try {
-      if (await buyPackage(selected)) {
+      const outcome = await buyPackage(selected);
+      if (outcome === 'unlocked') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(t('paywall.welcomeTitle'), t('paywall.welcomeBody'), [
           { text: t('paywall.welcomeCta'), onPress: () => router.back() },
+        ]);
+      } else if (outcome === 'notEntitled') {
+        // Paid but not unlocked: say so and offer the fix instead of silence.
+        Alert.alert(t('paywall.pendingTitle'), t('paywall.pendingBody'), [
+          { text: t('paywall.restore'), onPress: () => void restore() },
+          { text: t('paywall.contactSupport'), onPress: () => void Linking.openURL(websiteUrl('support', i18n.language)) },
+          { text: t('paywall.close'), style: 'cancel' },
         ]);
       }
     } catch (e) {

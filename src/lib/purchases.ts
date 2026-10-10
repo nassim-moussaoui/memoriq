@@ -110,16 +110,29 @@ function isCancelled(error: unknown): boolean {
 }
 
 /**
- * Buys a subscription package. Resolves true when Premium is now active,
- * false when the learner cancelled; throws on a real failure.
+ * What a subscription purchase led to. "unlocked" is the normal case;
+ * "notEntitled" means Apple charged but RevenueCat granted no "premium"
+ * entitlement (the product is not attached to it in the dashboard), which
+ * must never end in silence.
  */
-export async function buyPackage(pkg: PurchasesPackage): Promise<boolean> {
+export type PurchaseOutcome = "unlocked" | "cancelled" | "notEntitled";
+
+/** Buys a subscription package; throws on a real failure. */
+export async function buyPackage(pkg: PurchasesPackage): Promise<PurchaseOutcome> {
   try {
-    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    const { customerInfo, productIdentifier } = await Purchases.purchasePackage(pkg);
     applyCustomerInfo(customerInfo);
-    return customerInfo.entitlements.active[ENTITLEMENT] !== undefined;
+    if (customerInfo.entitlements.active[ENTITLEMENT] !== undefined) return "unlocked";
+    if (__DEV__) {
+      console.warn(
+        `[purchases] bought "${productIdentifier}" but "${ENTITLEMENT}" is not active. ` +
+          `Active entitlements: [${Object.keys(customerInfo.entitlements.active).join(", ")}]. ` +
+          `Attach this product to the "${ENTITLEMENT}" entitlement in RevenueCat, then restore.`
+      );
+    }
+    return "notEntitled";
   } catch (error) {
-    if (isCancelled(error)) return false;
+    if (isCancelled(error)) return "cancelled";
     throw error;
   }
 }
