@@ -1,0 +1,309 @@
+---
+import { CONTACT_EMAIL, PUBLISHER, ROUTES, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const mail = `mailto:${CONTACT_EMAIL}`;
+---
+
+{
+  lang === 'fr' ? (
+    <>
+      <div class="box">
+        <p>
+          <strong>En bref :</strong> sans compte, tes données restent sur ton téléphone. Avec un compte, ta progression est
+          synchronisée pour te suivre sur tes appareils. Memoriq n'affiche aucune publicité, n'utilise aucun traceur et ne
+          vend aucune donnée. Tu peux tout supprimer à tout moment depuis l'app.
+        </p>
+      </div>
+
+      <h2>1. Qui est responsable de tes données</h2>
+      <p>
+        Memoriq est éditée par {PUBLISHER}, entrepreneur individuel (auto-entrepreneur), responsable du traitement de tes
+        données personnelles. Pour toute question : <a href={mail}>{CONTACT_EMAIL}</a>.
+      </p>
+
+      <h2>2. Les données que nous traitons</h2>
+      <h3>Sans compte</h3>
+      <p>
+        Ta progression (versets commencés, révisions, série), ton plan et tes réglages sont enregistrés uniquement sur ton
+        téléphone. Ils ne nous sont pas transmis. Les rappels quotidiens sont des notifications locales, programmées par
+        ton téléphone : aucun serveur ne les envoie.
+      </p>
+      <h3>Avec un compte</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Donnée</th>
+            <th>Pourquoi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Adresse email et mot de passe (stocké chiffré, jamais lisible)</td>
+            <td>Créer ton compte, te connecter, réinitialiser ton mot de passe</td>
+          </tr>
+          <tr>
+            <td>Progression de mémorisation (versets, état de révision, historique des révisions)</td>
+            <td>Synchroniser ta progression entre tes appareils</td>
+          </tr>
+          <tr>
+            <td>Préférences d'apprentissage (minutes par jour, sourate en cours, série)</td>
+            <td>Retrouver ton plan sur un nouvel appareil</td>
+          </tr>
+          <tr>
+            <td>Inscription à la liste Sadaqa (avec ton pays) et cadeaux Sadaqa</td>
+            <td>Attribuer les années de Premium offertes, de façon anonyme</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>Achats</h3>
+      <p>
+        Les paiements sont traités par Apple. Nous ne recevons jamais tes coordonnées bancaires. Pour savoir si ton
+        abonnement est actif, l'app utilise RevenueCat, qui reçoit un identifiant technique (anonyme, ou l'identifiant de ton
+        compte si tu es connecté) et les informations de tes achats dans l'app (produit, date, statut).
+      </p>
+      <h3>Récitations audio</h3>
+      <p>
+        Les récitations sont téléchargées depuis everyayah.com, un service tiers d'hébergement de récitations. Comme pour
+        toute ressource sur Internet, ce service reçoit l'adresse IP de ton téléphone lors du téléchargement. Une fois
+        téléchargée, une récitation reste sur ton téléphone et ne nécessite plus de connexion.
+      </p>
+      <h3>Ce que nous ne faisons pas</h3>
+      <ul>
+        <li>Aucune publicité, aucun traceur publicitaire, aucune mesure d'audience.</li>
+        <li>Aucune vente, location ou cession de tes données.</li>
+        <li>Aucun accès à tes contacts, ta localisation, ton micro ou tes photos.</li>
+      </ul>
+
+      <h2>3. Bases légales</h2>
+      <ul>
+        <li>
+          <strong>L'exécution du contrat</strong> : compte, synchronisation, abonnement et cadeaux Sadaqa.
+        </li>
+        <li>
+          <strong>Ton consentement</strong> : les notifications de rappel, que tu peux désactiver à tout moment.
+        </li>
+        <li>
+          <strong>L'intérêt légitime</strong> : la sécurité du service et la prévention des abus.
+        </li>
+      </ul>
+
+      <h2>4. Nos prestataires</h2>
+      <p>Tes données ne sont partagées qu'avec les prestataires nécessaires au fonctionnement de l'app :</p>
+      <ul>
+        <li>
+          <strong>Supabase</strong> : hébergement de la base de données et des comptes.
+        </li>
+        <li>
+          <strong>RevenueCat</strong> : gestion des abonnements et des achats intégrés.
+        </li>
+        <li>
+          <strong>Apple</strong> : paiements, distribution de l'app.
+        </li>
+        <li>
+          <strong>everyayah.com</strong> : hébergement des fichiers audio des récitations.
+        </li>
+      </ul>
+      <p>
+        Certains de ces prestataires peuvent traiter des données en dehors de l'Union européenne, notamment aux
+        États-Unis. Ces transferts sont encadrés par les garanties prévues par le RGPD (clauses contractuelles types de la
+        Commission européenne ou cadre de protection des données UE-États-Unis).
+      </p>
+
+      <h2>5. Durée de conservation</h2>
+      <p>
+        Tes données sont conservées tant que ton compte existe. Quand tu supprimes ton compte, elles sont effacées
+        immédiatement de notre base, puis des sauvegardes techniques de nos prestataires selon leurs cycles habituels. Les
+        données des achats sont conservées par Apple et RevenueCat selon leurs propres obligations légales et comptables.
+      </p>
+
+      <h2>6. Tes droits</h2>
+      <p>
+        Tu disposes d'un droit d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition sur
+        tes données. Plusieurs de ces droits s'exercent directement dans l'app, rubrique Profil :
+      </p>
+      <ul>
+        <li>modifier ton email ou ton mot de passe ;</li>
+        <li>effacer ta progression, sur ton téléphone et dans le cloud ;</li>
+        <li>supprimer ton compte et toutes les données associées ;</li>
+        <li>sans compte, tout effacer de ton téléphone.</li>
+      </ul>
+      <p>
+        Pour toute autre demande, écris à <a href={mail}>{CONTACT_EMAIL}</a>. Nous répondons dans un délai d'un mois. Si
+        tu estimes que tes droits ne sont pas respectés, tu peux saisir la CNIL (<a href="https://www.cnil.fr">www.cnil.fr</a>).
+      </p>
+
+      <h2>7. Enfants</h2>
+      <p>
+        Memoriq peut être utilisée par toute la famille. Un compte ne doit être créé par un enfant de moins de 15 ans qu'avec
+        l'accord d'un parent. L'app ne contient ni publicité ni traceur.
+      </p>
+
+      <h2>8. Sécurité</h2>
+      <p>
+        Les échanges entre l'app et nos serveurs sont chiffrés (HTTPS). Chaque utilisateur ne peut accéder qu'à ses propres
+        données, grâce à des règles d'accès appliquées par la base de données elle-même.
+      </p>
+
+      <h2>9. Modifications</h2>
+      <p>
+        Cette politique peut évoluer avec l'app. En cas de changement important, nous t'en informerons dans l'app. La date
+        de dernière mise à jour figure en haut de cette page.
+      </p>
+      <p>
+        Voir aussi les <a href={ROUTES.terms.fr}>conditions d'utilisation</a>.
+      </p>
+    </>
+  ) : (
+    <>
+      <div class="box">
+        <p>
+          <strong>In short:</strong> without an account, your data stays on your phone. With an account, your progress is
+          synced so it follows you across your devices. Memoriq shows no ads, uses no trackers and sells no data. You can
+          delete everything at any time from the app.
+        </p>
+      </div>
+
+      <h2>1. Who is responsible for your data</h2>
+      <p>
+        Memoriq is published by {PUBLISHER}, a sole trader (auto-entrepreneur), who is the controller of your
+        personal data. For any question: <a href={mail}>{CONTACT_EMAIL}</a>.
+      </p>
+
+      <h2>2. The data we process</h2>
+      <h3>Without an account</h3>
+      <p>
+        Your progress (verses started, reviews, streak), your plan and your settings are stored only on your phone. They are
+        not sent to us. Daily reminders are local notifications scheduled by your phone: no server sends them.
+      </p>
+      <h3>With an account</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Email address and password (stored hashed, never readable)</td>
+            <td>Create your account, sign in, reset your password</td>
+          </tr>
+          <tr>
+            <td>Memorization progress (verses, review state, review history)</td>
+            <td>Sync your progress across your devices</td>
+          </tr>
+          <tr>
+            <td>Learning preferences (minutes per day, current surah, streak)</td>
+            <td>Restore your plan on a new device</td>
+          </tr>
+          <tr>
+            <td>Sadaqa waitlist sign-up (with your country) and Sadaqa gifts</td>
+            <td>Assign gifted years of Premium, anonymously</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>Purchases</h3>
+      <p>
+        Payments are processed by Apple. We never receive your payment details. To know whether your subscription is active,
+        the app uses RevenueCat, which receives a technical identifier (anonymous, or your account identifier when you are
+        signed in) and the details of your in-app purchases (product, date, status).
+      </p>
+      <h3>Audio recitations</h3>
+      <p>
+        Recitations are downloaded from everyayah.com, a third-party recitation hosting service. As with any resource on the
+        Internet, this service receives your phone's IP address during the download. Once downloaded, a recitation stays on
+        your phone and needs no connection.
+      </p>
+      <h3>What we do not do</h3>
+      <ul>
+        <li>No ads, no ad trackers, no audience measurement.</li>
+        <li>No selling, renting or transfer of your data.</li>
+        <li>No access to your contacts, location, microphone or photos.</li>
+      </ul>
+
+      <h2>3. Legal bases</h2>
+      <ul>
+        <li>
+          <strong>Performance of the contract</strong>: account, sync, subscription and Sadaqa gifts.
+        </li>
+        <li>
+          <strong>Your consent</strong>: reminder notifications, which you can turn off at any time.
+        </li>
+        <li>
+          <strong>Legitimate interest</strong>: security of the service and abuse prevention.
+        </li>
+      </ul>
+
+      <h2>4. Our service providers</h2>
+      <p>Your data is only shared with the providers the app needs to work:</p>
+      <ul>
+        <li>
+          <strong>Supabase</strong>: database and account hosting.
+        </li>
+        <li>
+          <strong>RevenueCat</strong>: subscription and in-app purchase management.
+        </li>
+        <li>
+          <strong>Apple</strong>: payments and app distribution.
+        </li>
+        <li>
+          <strong>everyayah.com</strong>: hosting of the recitation audio files.
+        </li>
+      </ul>
+      <p>
+        Some of these providers may process data outside the European Union, notably in the United States. These transfers
+        are covered by the safeguards of the GDPR (European Commission standard contractual clauses or the EU-US Data Privacy
+        Framework).
+      </p>
+
+      <h2>5. Retention</h2>
+      <p>
+        Your data is kept as long as your account exists. When you delete your account, it is erased immediately from our
+        database, then from our providers' technical backups according to their usual cycles. Purchase records are kept by
+        Apple and RevenueCat under their own legal and accounting obligations.
+      </p>
+
+      <h2>6. Your rights</h2>
+      <p>
+        You have the right to access, rectify, erase, restrict, port and object to the processing of your data. Several of
+        these rights can be exercised directly in the app, under Profile:
+      </p>
+      <ul>
+        <li>change your email or password;</li>
+        <li>reset your progress, on your phone and in the cloud;</li>
+        <li>delete your account and all associated data;</li>
+        <li>without an account, erase everything from your phone.</li>
+      </ul>
+      <p>
+        For any other request, write to <a href={mail}>{CONTACT_EMAIL}</a>. We answer within one month. If you believe your
+        rights are not respected, you can lodge a complaint with the CNIL (<a href="https://www.cnil.fr">www.cnil.fr</a>) or
+        your local data protection authority.
+      </p>
+
+      <h2>7. Children</h2>
+      <p>
+        Memoriq can be used by the whole family. A child under 15 should only create an account with a parent's agreement.
+        The app contains no ads and no trackers.
+      </p>
+
+      <h2>8. Security</h2>
+      <p>
+        Exchanges between the app and our servers are encrypted (HTTPS). Each user can only access their own data, through
+        access rules enforced by the database itself.
+      </p>
+
+      <h2>9. Changes</h2>
+      <p>
+        This policy may change along with the app. If there is a significant change, we will let you know in the app. The
+        date of the last update is shown at the top of this page.
+      </p>
+      <p>
+        See also the <a href={ROUTES.terms.en}>Terms of Use</a>.
+      </p>
+    </>
+  )
+}

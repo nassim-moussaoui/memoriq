@@ -1,0 +1,231 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource/amiri/400.css';
+@import '@fontsource/amiri/700.css';
+
+/* Same palette as the app (src/constants/theme.ts) plus the logo gold. */
+:root {
+  --bg: #ffffff;
+  --surface: #f4f5f3;
+  --surface-2: #e7ebe8;
+  --text: #0c1411;
+  --muted: #56615c;
+  --tint: #0b7a5c;
+  --tint-strong: #075c45;
+  --tint-soft: #e3f2ec;
+  --on-tint: #ffffff;
+  --gold: #c9952e;
+  --gold-soft: #f6e7c4;
+  --danger: #c0392b;
+  --warning: #b26a00;
+  --info: #1d5fbf;
+  --border: rgba(12, 20, 17, 0.08);
+  --shadow: 0 1px 2px rgba(12, 20, 17, 0.04), 0 12px 32px rgba(12, 20, 17, 0.08);
+  --radius: 24px;
+  --max: 1160px;
+  --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --arabic: 'Amiri', 'Geeza Pro', 'Noto Naskh Arabic', serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0f0d;
+    --surface: #131a17;
+    --surface-2: #1c2521;
+    --text: #f2f5f3;
+    --muted: #a3ada8;
+    --tint: #3fbf95;
+    --tint-strong: #2fa37e;
+    --tint-soft: #12362a;
+    --on-tint: #04261c;
+    --gold: #e8c468;
+    --gold-soft: #3a2f14;
+    --danger: #e57368;
+    --warning: #e0a340;
+    --info: #6fa8f5;
+    --border: rgba(255, 255, 255, 0.08);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 40px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.arabic {
+  font-family: var(--arabic);
+  direction: rtl;
+  line-height: 1.9;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tint);
+}
+
+.section {
+  padding: 96px 0;
+}
+
+.section-head {
+  display: grid;
+  gap: 12px;
+  max-width: 680px;
+  margin-bottom: 48px;
+}
+
+.section-head.center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.section-head h2 {
+  font-size: clamp(30px, 4.4vw, 44px);
+  font-weight: 800;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--tint);
+  color: var(--on-tint);
+}
+
+.btn-primary:hover {
+  background: var(--tint-strong);
+}
+
+.btn-ghost {
+  background: var(--tint-soft);
+  color: var(--tint);
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: 16px;
+  top: 16px;
+  z-index: 100;
+  background: var(--bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--tint);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Scroll reveal: elements fade up once they enter the viewport. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: 72px 0;
+  }
+  .section-head {
+    margin-bottom: 32px;
+  }
+}

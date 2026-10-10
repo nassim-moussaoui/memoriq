@@ -1,0 +1,120 @@
+---
+import type { Lang, RouteKey } from '../i18n';
+import Base from './Base.astro';
+
+interface Props {
+  lang: Lang;
+  route: RouteKey;
+  title: string;
+  description: string;
+  updated?: string;
+}
+const { lang, route, title, description, updated } = Astro.props;
+---
+
+<Base lang={lang} route={route} title={title} description={description}>
+  <article class="container prose">
+    <header class="prose-head">
+      <h1>{title}</h1>
+      {updated ? <p class="updated">{updated}</p> : null}
+    </header>
+    <slot />
+  </article>
+</Base>
+
+<style>
+  .prose {
+    max-width: 760px;
+    padding-top: 64px;
+    padding-bottom: 96px;
+  }
+  .prose-head {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .prose-head h1 {
+    font-size: clamp(34px, 5vw, 48px);
+    font-weight: 850;
+  }
+  .updated {
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .prose :global(h2) {
+    font-size: 23px;
+    font-weight: 800;
+    margin: 44px 0 14px;
+  }
+  .prose :global(h3) {
+    font-size: 18px;
+    font-weight: 750;
+    margin: 28px 0 10px;
+  }
+  .prose :global(p),
+  .prose :global(li) {
+    color: var(--text);
+    font-size: 16.5px;
+    line-height: 1.75;
+  }
+  .prose :global(p + p) {
+    margin-top: 14px;
+  }
+  .prose :global(ul) {
+    padding-left: 22px;
+    margin: 12px 0;
+    display: grid;
+    gap: 6px;
+  }
+  .prose :global(a:not(.btn)) {
+    color: var(--tint);
+    font-weight: 600;
+  }
+  .prose :global(.box) {
+    margin: 20px 0;
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: var(--tint-soft);
+  }
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    text-align: left;
+    vertical-align: top;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .prose :global(th) {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  @media (max-width: 640px) {
+    .prose :global(table),
+    .prose :global(thead),
+    .prose :global(tbody),
+    .prose :global(tr),
+    .prose :global(td) {
+      display: block;
+    }
+    .prose :global(thead) {
+      display: none;
+    }
+    .prose :global(tr) {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .prose :global(td) {
+      border: 0;
+      padding: 4px 0;
+    }
+  }
+</style>

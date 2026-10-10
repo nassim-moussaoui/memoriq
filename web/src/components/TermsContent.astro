@@ -1,0 +1,219 @@
+---
+import { CONTACT_EMAIL, PUBLISHER, ROUTES, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const mail = `mailto:${CONTACT_EMAIL}`;
+const appleEula = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+---
+
+{
+  lang === 'fr' ? (
+    <>
+      <h2>1. Le service</h2>
+      <p>
+        Memoriq est une application mobile d'aide à la mémorisation du Coran, éditée par {PUBLISHER}, entrepreneur individuel
+        (contact : <a href={mail}>{CONTACT_EMAIL}</a>). En utilisant l'app, tu acceptes les présentes conditions, ainsi que le{' '}
+        <a href={appleEula}>contrat de licence standard d'Apple</a> pour les apps distribuées sur l'App Store.
+      </p>
+
+      <h2>2. Compte</h2>
+      <p>
+        L'app s'utilise sans compte. Un compte, facultatif, permet de synchroniser ta progression entre tes appareils. Tu es
+        responsable de la confidentialité de ton mot de passe. Tu peux modifier ou supprimer ton compte à tout moment depuis
+        l'app (Profil, Mes données).
+      </p>
+
+      <h2>3. Offre gratuite et Premium</h2>
+      <p>
+        Al-Fatiha et le Juz' 'Amma (sourates 78 à 114), ainsi que toutes les fonctions d'apprentissage, sont gratuits, sans
+        limite de durée. L'abonnement Premium donne accès aux 114 sourates et à des récitateurs supplémentaires.
+      </p>
+
+      <h2>4. Abonnements</h2>
+      <ul>
+        <li>L'abonnement est proposé au mois ou à l'année. Le prix est affiché dans l'app avant tout achat.</li>
+        <li>Le paiement est débité sur ton compte Apple à la confirmation de l'achat.</li>
+        <li>
+          L'abonnement se renouvelle automatiquement, sauf si tu le résilies au moins 24 heures avant la fin de la période
+          en cours. Le renouvellement est facturé dans les 24 heures précédant cette échéance.
+        </li>
+        <li>
+          L'essai gratuit de l'abonnement annuel, s'il est proposé, se transforme en abonnement payant à son terme, sauf
+          résiliation au moins 24 heures avant sa fin.
+        </li>
+        <li>
+          Tu gères et résilies ton abonnement dans les réglages de ton compte Apple (ou depuis l'app : Premium, Gérer
+          l'abonnement). La résiliation prend effet à la fin de la période déjà payée.
+        </li>
+        <li>
+          Les remboursements relèvent d'Apple, selon ses conditions : tu peux en faire la demande sur
+          <a href="https://reportaproblem.apple.com"> reportaproblem.apple.com</a>.
+        </li>
+      </ul>
+
+      <h2>5. Sadaqa : offrir un an de Premium</h2>
+      <p>
+        Sadaqa permet d'offrir un an de Premium à un étudiant inscrit sur la liste d'attente de l'app. Il s'agit d'un achat
+        intégré unique, sans abonnement ni renouvellement. C'est un cadeau entre utilisateurs : ce n'est pas un don à une
+        association et il n'ouvre droit à aucune déduction fiscale.
+      </p>
+      <ul>
+        <li>
+          L'année offerte est attribuée à l'étudiant inscrit depuis le plus longtemps. Si personne n'attend au moment de
+          l'achat, elle est attribuée dès qu'un étudiant s'inscrit.
+        </li>
+        <li>L'attribution est anonyme : celui qui offre et celui qui reçoit ne connaissent pas leur identité respective.</li>
+        <li>
+          Pour s'inscrire sur la liste, un compte est nécessaire. Une inscription peut être retirée à tout moment.
+        </li>
+      </ul>
+
+      <h2>6. Contenus</h2>
+      <p>
+        Le texte du Coran, sa translittération et ses traductions (Muhammad Hamidullah en français, Saheeh International en
+        anglais) proviennent de jeux de données publics. Les récitations sont celles de récitateurs reconnus, diffusées par
+        everyayah.com. Memoriq accompagne ta mémorisation mais ne remplace pas l'enseignement d'un professeur, notamment
+        pour le tajwid.
+      </p>
+
+      <h2>7. Bon usage</h2>
+      <p>
+        Tu t'engages à utiliser l'app de façon personnelle et loyale : pas de tentative d'accès aux données d'autres
+        utilisateurs, de contournement des achats, ni d'utilisation automatisée du service.
+      </p>
+
+      <h2>8. Propriété intellectuelle</h2>
+      <p>
+        L'app, son nom, son logo, son design et son code sont la propriété de {PUBLISHER}. Le texte du Coran n'appartient à
+        personne : il est présenté avec le plus grand soin et dans le respect qui lui est dû.
+      </p>
+
+      <h2>9. Disponibilité et responsabilité</h2>
+      <p>
+        Nous faisons de notre mieux pour que l'app fonctionne sans interruption et sans erreur, mais nous ne pouvons pas le
+        garantir. L'app est fournie telle quelle. Dans les limites permises par la loi, notre responsabilité ne saurait être
+        engagée pour une interruption du service ou une perte de données, d'où la possibilité de synchroniser ta progression
+        avec un compte.
+      </p>
+
+      <h2>10. Évolutions</h2>
+      <p>
+        Ces conditions peuvent évoluer avec l'app. En cas de changement important, nous t'en informerons dans l'app.
+      </p>
+
+      <h2>11. Droit applicable</h2>
+      <p>
+        Ces conditions sont soumises au droit français. En cas de litige, une solution amiable sera recherchée avant toute
+        action. En tant que consommateur, tu peux aussi recourir gratuitement à un médiateur de la consommation.
+      </p>
+
+      <h2>12. Hébergement du site</h2>
+      <p>Ce site est hébergé par Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis.</p>
+      <p>
+        Voir aussi la <a href={ROUTES.privacy.fr}>politique de confidentialité</a>.
+      </p>
+    </>
+  ) : (
+    <>
+      <h2>1. The service</h2>
+      <p>
+        Memoriq is a mobile app that helps you memorize the Quran, published by {PUBLISHER}, sole trader (contact:{' '}
+        <a href={mail}>{CONTACT_EMAIL}</a>). By using the app, you accept these terms as well as{' '}
+        <a href={appleEula}>Apple's standard license agreement</a> for apps distributed on the App Store.
+      </p>
+
+      <h2>2. Account</h2>
+      <p>
+        The app works without an account. An optional account lets you sync your progress across your devices. You are
+        responsible for keeping your password confidential. You can change or delete your account at any time from the app
+        (Profile, My data).
+      </p>
+
+      <h2>3. Free plan and Premium</h2>
+      <p>
+        Al-Fatiha and Juz' 'Amma (surahs 78 to 114), along with every learning feature, are free with no time limit. The
+        Premium subscription unlocks all 114 surahs and additional reciters.
+      </p>
+
+      <h2>4. Subscriptions</h2>
+      <ul>
+        <li>The subscription is offered monthly or yearly. The price is shown in the app before any purchase.</li>
+        <li>Payment is charged to your Apple account at confirmation of purchase.</li>
+        <li>
+          The subscription renews automatically unless you cancel it at least 24 hours before the end of the current period.
+          Renewal is charged within the 24 hours before that date.
+        </li>
+        <li>
+          The free trial of the yearly subscription, when offered, turns into a paid subscription when it ends, unless
+          cancelled at least 24 hours before its end.
+        </li>
+        <li>
+          You manage and cancel your subscription in your Apple account settings (or from the app: Premium, Manage
+          subscription). Cancellation takes effect at the end of the period already paid for.
+        </li>
+        <li>
+          Refunds are handled by Apple under its own terms: you can request one at
+          <a href="https://reportaproblem.apple.com"> reportaproblem.apple.com</a>.
+        </li>
+      </ul>
+
+      <h2>5. Sadaqa: gift a year of Premium</h2>
+      <p>
+        Sadaqa lets you gift a year of Premium to a student on the app's waitlist. It is a one-time in-app purchase, with no
+        subscription or renewal. It is a gift between users: it is not a donation to a charity and is not tax deductible.
+      </p>
+      <ul>
+        <li>
+          The gifted year goes to the student who has been on the list the longest. If nobody is waiting at the time of
+          purchase, it is assigned as soon as a student signs up.
+        </li>
+        <li>Assignment is anonymous: the giver and the receiver do not learn each other's identity.</li>
+        <li>An account is required to join the list. A sign-up can be withdrawn at any time.</li>
+      </ul>
+
+      <h2>6. Content</h2>
+      <p>
+        The Quran text, its transliteration and its translations (Muhammad Hamidullah in French, Saheeh International in
+        English) come from public datasets. Recitations are by renowned reciters, served by everyayah.com. Memoriq supports
+        your memorization but does not replace a teacher, especially for tajwid.
+      </p>
+
+      <h2>7. Fair use</h2>
+      <p>
+        You agree to use the app personally and fairly: no attempt to access other users' data, bypass purchases, or use the
+        service in an automated way.
+      </p>
+
+      <h2>8. Intellectual property</h2>
+      <p>
+        The app, its name, logo, design and code belong to {PUBLISHER}. The Quran text belongs to no one: it is presented with
+        the utmost care and the respect it is due.
+      </p>
+
+      <h2>9. Availability and liability</h2>
+      <p>
+        We do our best to keep the app running without interruption or error, but cannot guarantee it. The app is provided as
+        is. To the extent permitted by law, we cannot be held liable for a service interruption or data loss, which is why you
+        can sync your progress with an account.
+      </p>
+
+      <h2>10. Changes</h2>
+      <p>These terms may change along with the app. If there is a significant change, we will let you know in the app.</p>
+
+      <h2>11. Governing law</h2>
+      <p>
+        These terms are governed by French law. In case of dispute, an amicable solution will be sought before any action. As
+        a consumer, you may also use a consumer mediator free of charge.
+      </p>
+
+      <h2>12. Website hosting</h2>
+      <p>This website is hosted by Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, United States.</p>
+      <p>
+        See also the <a href={ROUTES.privacy.en}>Privacy Policy</a>.
+      </p>
+    </>
+  )
+}

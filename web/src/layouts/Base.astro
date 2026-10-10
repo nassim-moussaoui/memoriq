@@ -1,0 +1,229 @@
+---
+import '../styles/global.css';
+import { CONTACT_EMAIL, PUBLISHER, ROUTES, useTranslations, type Lang, type RouteKey } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  route: RouteKey;
+  title?: string;
+  description?: string;
+}
+
+const { lang, route, title, description } = Astro.props;
+const t = useTranslations(lang);
+const other: Lang = lang === 'fr' ? 'en' : 'fr';
+const home = ROUTES.home[lang];
+const pageTitle = title ? `${title} | Memoriq` : t.metaTitle;
+const pageDescription = description ?? t.metaDescription;
+const canonical = new URL(ROUTES[route][lang], Astro.site);
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonical} />
+    {
+      (['fr', 'en'] as const).map((l) => (
+        <link rel="alternate" hreflang={l} href={new URL(ROUTES[route][l], Astro.site)} />
+      ))
+    }
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0B7A5C" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/brand/memoriq-logo.svg', Astro.site)} />
+    <meta name="twitter:card" content="summary" />
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.skip}</a>
+
+    <header class="site-header">
+      <div class="container header-row">
+        <a class="brand" href={home} aria-label="Memoriq">
+          <img src="/brand/memoriq-logo.svg" alt="" width="34" height="34" />
+          <span>Memoriq</span>
+        </a>
+        <nav class="nav" aria-label="Navigation">
+          <a href={`${home}#science`}>{t.nav.method}</a>
+          <a href={`${home}#how`}>{t.nav.how}</a>
+          <a href={`${home}#pricing`}>{t.nav.pricing}</a>
+          <a href={`${home}#sadaqa`}>{t.nav.sadaqa}</a>
+          <a href={ROUTES.support[lang]}>{t.nav.support}</a>
+        </nav>
+        <a class="lang-switch" href={ROUTES[route][other]} hreflang={other} aria-label={t.lang.label}>
+          {other.toUpperCase()}
+        </a>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href={home}>
+            <img src="/brand/memoriq-logo.svg" alt="" width="30" height="30" />
+            <span>Memoriq</span>
+          </a>
+          <p>{t.footer.tagline}</p>
+        </div>
+        <div class="footer-links">
+          <span class="footer-title">{t.footer.legal}</span>
+          <a href={ROUTES.privacy[lang]}>{t.footer.privacy}</a>
+          <a href={ROUTES.terms[lang]}>{t.footer.terms}</a>
+          <a href={ROUTES.support[lang]}>{t.footer.support}</a>
+          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span>© {year} {PUBLISHER}. {t.footer.rights}</span>
+        <a href={ROUTES[route][other]} hreflang={other}>{t.lang.other}</a>
+      </div>
+    </footer>
+
+    <script>
+      // Scroll reveal and chart drawing: add .is-visible once in view.
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+      );
+      document.querySelectorAll('.reveal, .draw').forEach((el) => observer.observe(el));
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 68px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+  .brand img {
+    border-radius: 9px;
+  }
+  .nav {
+    display: flex;
+    gap: 28px;
+    margin-left: auto;
+  }
+  .nav a {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+  .nav a:hover {
+    color: var(--text);
+  }
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 56px 0 32px;
+    background: var(--surface);
+  }
+  .footer-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 32px;
+  }
+  .footer-brand {
+    display: grid;
+    gap: 10px;
+    max-width: 320px;
+    color: var(--muted);
+  }
+  .footer-brand .brand {
+    color: var(--text);
+  }
+  .footer-links {
+    display: grid;
+    gap: 8px;
+  }
+  .footer-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .footer-links a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .footer-links a:hover {
+    color: var(--tint);
+  }
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .footer-bottom a {
+    color: var(--muted);
+  }
+  @media (max-width: 860px) {
+    .nav {
+      display: none;
+    }
+    .lang-switch {
+      margin-left: auto;
+    }
+  }
+</style>

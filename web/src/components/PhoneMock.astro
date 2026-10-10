@@ -1,0 +1,312 @@
+---
+import content from '../generated/app-content.json';
+import { useTranslations, type Lang } from '../i18n';
+
+/**
+ * A faithful HTML rendition of the app's recite step (no screenshot needed):
+ * the verse of Al-Ikhlas with two words revealed and two still hidden behind
+ * breathing pills, then the rating cards.
+ */
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useTranslations(lang).mock;
+const verse = content.verses.ikhlas1;
+const arabicWords = verse.ar.split(/\s+/);
+const phoneticWords = verse.tr.split(/\s+/);
+const revealed = new Set([0, 1]);
+const ratings = [
+  { key: 'again', label: t.again, when: t.againWhen },
+  { key: 'hard', label: t.hard, when: t.hardWhen },
+  { key: 'good', label: t.good, when: t.goodWhen },
+  { key: 'easy', label: t.easy, when: t.easyWhen },
+];
+---
+
+<div class="phone" role="img" aria-label={`${t.ref}: ${verse.tr}`}>
+  <div class="screen">
+    <div class="notch"></div>
+    <div class="bar">
+      <span class="close">×</span>
+      <span class="progress"><span></span></span>
+      <span class="count">3/8</span>
+    </div>
+    <div class="ctx">
+      <span class="chip"><i></i>{t.step}</span>
+      <span class="ref">{t.ref}</span>
+    </div>
+    <div class="card">
+      <p class="arabic ar" lang="ar">
+        {
+          arabicWords.map((w, i) =>
+            revealed.has(i) ? (
+              <span class="word">{w}</span>
+            ) : (
+              <span class="word masked" style={`--i:${i}`}>
+                {w}
+              </span>
+            ),
+          )
+        }
+      </p>
+      <div class="sep"></div>
+      <p class="tr">
+        {
+          phoneticWords.map((w, i) =>
+            revealed.has(i) ? (
+              <span class="word on">{w}</span>
+            ) : (
+              <span class="word masked" style={`--i:${i}`}>
+                {w}
+              </span>
+            ),
+          )
+        }
+      </p>
+      <span class="tap" aria-hidden="true"></span>
+    </div>
+    <p class="hint">{t.hint}</p>
+    <p class="question">{t.question}</p>
+    <div class="ratings">
+      {
+        ratings.map((r) => (
+          <div class={`rating ${r.key}`}>
+            <strong>{r.label}</strong>
+            <span>{r.when}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<style>
+  .phone {
+    width: min(330px, 86vw);
+    aspect-ratio: 9 / 18.5;
+    border-radius: 48px;
+    padding: 12px;
+    background: linear-gradient(145deg, #1d2a25, #0a110e);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.06) inset,
+      0 40px 80px -20px rgba(7, 60, 45, 0.45),
+      0 20px 40px -20px rgba(0, 0, 0, 0.4);
+    transform: rotate(-2.5deg);
+  }
+  .screen {
+    position: relative;
+    height: 100%;
+    border-radius: 38px;
+    background: var(--bg);
+    padding: 44px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .notch {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 96px;
+    height: 26px;
+    border-radius: 14px;
+    background: #0a110e;
+    transform: translateX(-50%);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .close {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1;
+  }
+  .progress {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .progress span {
+    display: block;
+    width: 34%;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--tint);
+  }
+  .ctx {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--info) 14%, transparent);
+    color: var(--info);
+    font-weight: 700;
+  }
+  .chip i {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--info);
+  }
+  .ref {
+    color: var(--muted);
+  }
+  .card {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    padding: 26px 16px;
+    border-radius: 22px;
+    background: var(--surface);
+    text-align: center;
+  }
+  .ar {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 10px;
+    font-size: 30px;
+    line-height: 1.8;
+  }
+  .sep {
+    height: 1px;
+    margin: 0 28px;
+    background: var(--surface-2);
+  }
+  .tr {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 7px;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .word {
+    position: relative;
+  }
+  .word.on {
+    color: var(--tint);
+  }
+  .word.masked {
+    color: transparent;
+  }
+  .word.masked::after {
+    content: '';
+    position: absolute;
+    inset: 24% -2px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    animation: breathe 2.4s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.22s);
+  }
+  @keyframes breathe {
+    50% {
+      opacity: 0.55;
+    }
+  }
+  .tap {
+    position: absolute;
+    left: 32%;
+    top: 34%;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--tint);
+    opacity: 0;
+    animation: tap 2.8s ease-out infinite 1s;
+  }
+  @keyframes tap {
+    0% {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.8;
+    }
+    60%,
+    100% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .question {
+    margin-top: auto;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .ratings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .rating {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1.5px solid;
+  }
+  .rating strong {
+    font-size: 14px;
+  }
+  .rating span {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .rating.again {
+    border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  .rating.again strong {
+    color: var(--danger);
+  }
+  .rating.hard {
+    border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  }
+  .rating.hard strong {
+    color: var(--warning);
+  }
+  .rating.easy {
+    border-color: color-mix(in srgb, var(--info) 40%, transparent);
+  }
+  .rating.easy strong {
+    color: var(--info);
+  }
+  .rating.good {
+    border-color: color-mix(in srgb, var(--tint) 45%, transparent);
+  }
+  .rating.good strong {
+    color: var(--tint);
+  }
+</style>

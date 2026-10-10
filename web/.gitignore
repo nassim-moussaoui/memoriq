@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.astro/
+.vercel/
+# Copied from the app by scripts/sync-from-app.mjs on every dev/build.
+public/brand/
+src/generated/
+public/favicon.svg

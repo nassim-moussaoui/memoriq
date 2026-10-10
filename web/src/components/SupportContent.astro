@@ -1,0 +1,154 @@
+---
+import { CONTACT_EMAIL, type Lang } from '../i18n';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+
+const copy = {
+  fr: {
+    intro: "Une question, un bug, une erreur dans un texte ? Écris-nous, nous répondons en général sous 48 heures.",
+    write: 'Écrire au support',
+    faqTitle: 'Questions fréquentes',
+    items: [
+      {
+        q: 'Comment restaurer mon abonnement sur un nouveau téléphone ?',
+        a: "Ouvre l'écran Premium et touche « Restaurer mes achats », avec le même compte Apple que lors de l'achat. Si tu as un compte Memoriq, connecte-toi : Premium te suit automatiquement.",
+      },
+      {
+        q: 'Comment résilier mon abonnement ?',
+        a: "Dans l'app : Premium, puis « Gérer l'abonnement ». Ou dans les Réglages de ton iPhone : ton nom, puis Abonnements. La résiliation prend effet à la fin de la période payée.",
+      },
+      {
+        q: "J'ai oublié mon mot de passe.",
+        a: "Dans Profil, saisis ton email puis touche « Mot de passe oublié ? ». Ouvre le lien reçu sur ton téléphone pour choisir un nouveau mot de passe.",
+      },
+      {
+        q: 'Comment supprimer mon compte et mes données ?',
+        a: "Dans Profil, section « Mes données » : « Supprimer mon compte » efface ton compte et toutes les données associées. Sans compte, « Tout effacer » remet l'app à zéro.",
+      },
+      {
+        q: 'Ma progression a-t-elle disparu en changeant de téléphone ?',
+        a: "Sans compte, la progression reste sur l'ancien téléphone. Crée un compte sur l'ancien téléphone, synchronise, puis connecte-toi sur le nouveau.",
+      },
+      {
+        q: 'Les récitations ne se lancent pas.',
+        a: 'La première écoute d’un verset nécessite une connexion. Ensuite, il est gardé sur ton téléphone et fonctionne hors ligne.',
+      },
+      {
+        q: "J'ai repéré une erreur dans un texte ou une traduction.",
+        a: 'Merci ! Écris-nous en indiquant la sourate et le verset : nous corrigeons au plus vite.',
+      },
+    ],
+  },
+  en: {
+    intro: 'A question, a bug, a mistake in a text? Write to us, we usually answer within 48 hours.',
+    write: 'Email support',
+    faqTitle: 'Frequently asked questions',
+    items: [
+      {
+        q: 'How do I restore my subscription on a new phone?',
+        a: 'Open the Premium screen and tap "Restore purchases" with the same Apple account used for the purchase. If you have a Memoriq account, sign in: Premium follows you automatically.',
+      },
+      {
+        q: 'How do I cancel my subscription?',
+        a: 'In the app: Premium, then "Manage subscription". Or in your iPhone Settings: your name, then Subscriptions. Cancellation takes effect at the end of the paid period.',
+      },
+      {
+        q: 'I forgot my password.',
+        a: 'In Profile, enter your email and tap "Forgot your password?". Open the link you receive on your phone to choose a new password.',
+      },
+      {
+        q: 'How do I delete my account and my data?',
+        a: 'In Profile, under "My data": "Delete my account" erases your account and all associated data. Without an account, "Erase everything" resets the app.',
+      },
+      {
+        q: 'My progress is gone after changing phones.',
+        a: 'Without an account, progress stays on the old phone. Create an account on the old phone, sync, then sign in on the new one.',
+      },
+      {
+        q: 'Recitations do not play.',
+        a: 'The first time you listen to a verse, a connection is needed. After that it is kept on your phone and works offline.',
+      },
+      {
+        q: 'I found a mistake in a text or a translation.',
+        a: 'Thank you! Write to us with the surah and verse: we will fix it as soon as possible.',
+      },
+    ],
+  },
+}[lang];
+---
+
+<div class="contact">
+  <p>{copy.intro}</p>
+  <a class="btn btn-primary" href={`mailto:${CONTACT_EMAIL}?subject=Memoriq`}>
+    <Icon name="mail" size={20} />
+    {copy.write}
+  </a>
+  <span class="email">{CONTACT_EMAIL}</span>
+</div>
+
+<h2>{copy.faqTitle}</h2>
+<div class="faq">
+  {
+    copy.items.map((item) => (
+      <details>
+        <summary>{item.q}</summary>
+        <p>{item.a}</p>
+      </details>
+    ))
+  }
+</div>
+
+<style>
+  .contact {
+    display: grid;
+    justify-items: start;
+    gap: 16px;
+    padding: 28px;
+    border-radius: 24px;
+    background: var(--tint-soft);
+  }
+  .email {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .faq {
+    display: grid;
+    gap: 10px;
+  }
+  details {
+    border-radius: 16px;
+    background: var(--surface);
+    padding: 2px 20px;
+  }
+  summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 15px 0;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::after {
+    content: '+';
+    color: var(--tint);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  details[open] summary::after {
+    transform: rotate(45deg);
+  }
+  details p {
+    padding: 0 0 16px;
+    color: var(--muted);
+  }
+</style>
