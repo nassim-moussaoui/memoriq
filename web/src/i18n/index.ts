@@ -11,7 +11,7 @@ export const ROUTES = {
 } as const;
 export type RouteKey = keyof typeof ROUTES;
 
-export const CONTACT_EMAIL = 'nassim.moussaoui02@gmail.com';
+export const CONTACT_EMAIL = 'contact@memoriq.fr';
 export const PUBLISHER = 'Nassim Moussaoui';
 
 export const ui = {

@@ -1,9 +1,9 @@
 /**
  * The Memoriq website (web/ in this repo, deployed on Vercel). Apple requires
  * the privacy policy and terms to be reachable from the paywall, and a
- * support URL on the App Store page. Change WEBSITE once a domain is bought.
+ * support URL on the App Store page.
  */
-export const WEBSITE = 'https://memoriq-nine.vercel.app';
+export const WEBSITE = 'https://memoriq.fr';
 
 const PAGES = {
   privacy: { fr: '/confidentialite', en: '/en/privacy' },
