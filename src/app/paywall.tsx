@@ -11,7 +11,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { LegalLinks } from '@/constants/links';
+import { websiteUrl } from '@/constants/links';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
@@ -318,19 +318,13 @@ export default function PaywallScreen() {
               </ThemedText>
             </Pressable>
             <ThemedText style={[styles.link, { color: theme.textSecondary }]}>·</ThemedText>
-            <Pressable onPress={() => void Linking.openURL(LegalLinks.terms)} hitSlop={6}>
+            <Pressable onPress={() => void Linking.openURL(websiteUrl('terms', i18n.language))} hitSlop={6}>
               <ThemedText style={[styles.link, { color: theme.textSecondary }]}>{t('paywall.terms')}</ThemedText>
             </Pressable>
-            {LegalLinks.privacy ? (
-              <>
-                <ThemedText style={[styles.link, { color: theme.textSecondary }]}>·</ThemedText>
-                <Pressable onPress={() => void Linking.openURL(LegalLinks.privacy)} hitSlop={6}>
-                  <ThemedText style={[styles.link, { color: theme.textSecondary }]}>
-                    {t('paywall.privacy')}
-                  </ThemedText>
-                </Pressable>
-              </>
-            ) : null}
+            <ThemedText style={[styles.link, { color: theme.textSecondary }]}>·</ThemedText>
+            <Pressable onPress={() => void Linking.openURL(websiteUrl('privacy', i18n.language))} hitSlop={6}>
+              <ThemedText style={[styles.link, { color: theme.textSecondary }]}>{t('paywall.privacy')}</ThemedText>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>

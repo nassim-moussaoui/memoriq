@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { PrimaryButton } from '@/components/ui/primary-button';
+import { websiteUrl } from '@/constants/links';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
@@ -21,7 +22,7 @@ type Field = 'email' | 'password';
  * change is confirmed by Supabase through a link sent to the new address.
  */
 export default function AccountEditScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const session = useSession();
   const { field: rawField } = useLocalSearchParams<{ field?: string }>();
@@ -45,6 +46,7 @@ export default function AccountEditScreen() {
     setBusy(true);
     const { error: updateError } = await supabase.auth.updateUser(
       field === 'password' ? { password: value } : { email: value.trim() },
+      { emailRedirectTo: websiteUrl('confirmed', i18n.language) },
     );
     setBusy(false);
     if (updateError) {

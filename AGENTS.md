@@ -26,7 +26,7 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 
 ## Website
 
-`web/` is the marketing site and legal pages (Astro 5, static; FR at the root, EN under `/en`): home, `/confidentialite` (privacy, required by Apple), `/conditions` (terms), `/support` (support URL, required by Apple), `/compte/confirme` (landing of Supabase email links). It has its own `package.json`; `npm run dev|build` first syncs the logo and the onboarding texts from the app. It is excluded from the app's tsc, lint and Metro (`metro.config.js`). Deployed on Vercel with Root Directory `web`. Once the site URL is known, set `LegalLinks.privacy` in `src/constants/links.ts` and the Supabase Auth Site URL.
+`web/` is the marketing site and legal pages (Astro 5, static; FR at the root, EN under `/en`): home, `/confidentialite` (privacy, required by Apple), `/conditions` (terms), `/support` (support URL, required by Apple), `/compte/confirme` (landing of Supabase email links). It has its own `package.json`; `npm run dev|build` first syncs the logo and the onboarding texts from the app. It is excluded from the app's tsc, lint and Metro (`metro.config.js`). Deployed on Vercel with Root Directory `web`. Live at https://memoriq-nine.vercel.app (`WEBSITE` in `src/constants/links.ts`, used by the paywall legal links, the Profile help rows and the Supabase email redirects; change it there and in `web/astro.config.mjs` once a domain is bought).
 
 ## Roadmap
 

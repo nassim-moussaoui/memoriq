@@ -281,7 +281,8 @@
     "sectionReminders": "Rappels",
     "remindersFooter": "Le rappel t'indique combien de versets t'attendent ce jour-là.",
     "sectionAbout": "À propos",
-    "version": "Version"
+    "version": "Version",
+    "help": "Aide et contact"
   },
   "auth": {
     "title": "Compte",

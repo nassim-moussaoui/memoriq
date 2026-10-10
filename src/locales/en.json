@@ -281,7 +281,8 @@
     "sectionReminders": "Reminders",
     "remindersFooter": "The reminder tells you how many verses are waiting that day.",
     "sectionAbout": "About",
-    "version": "Version"
+    "version": "Version",
+    "help": "Help and contact"
   },
   "auth": {
     "title": "Account",

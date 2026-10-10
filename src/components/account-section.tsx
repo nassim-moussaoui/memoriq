@@ -1,5 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { createURL } from 'expo-linking';
+
+import { websiteUrl } from '@/constants/links';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -63,7 +65,11 @@ export function AccountSection() {
 
   const signUp = () =>
     run(async () => {
-      const { error } = await client.auth.signUp({ email: email.trim(), password });
+      const { error } = await client.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: websiteUrl('confirmed', i18n.language) },
+      });
       if (error) throw error;
       return t('auth.confirmEmail');
     });

@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,7 @@ import { DataSection } from '@/components/data-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SettingsRow, SettingsSection, Stepper } from '@/components/ui/settings';
+import { websiteUrl } from '@/constants/links';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { RECITERS, getReciter } from '@/lib/audio';
@@ -31,7 +32,7 @@ const FONT_STEP = 0.1;
 const BASMALA = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
 
 export default function ProfileScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const store = useAppStore();
   const reciter = getReciter(store.reciterId);
@@ -251,6 +252,24 @@ export default function ProfileScreen() {
               iconColor={theme.info}
               label={t('profile.method')}
               onPress={() => router.push('/onboarding')}
+            />
+            <SettingsRow
+              icon="help-buoy"
+              iconColor={theme.tint}
+              label={t('profile.help')}
+              onPress={() => void Linking.openURL(websiteUrl('support', i18n.language))}
+            />
+            <SettingsRow
+              icon="shield-checkmark"
+              iconColor={theme.textSecondary}
+              label={t('paywall.privacy')}
+              onPress={() => void Linking.openURL(websiteUrl('privacy', i18n.language))}
+            />
+            <SettingsRow
+              icon="document-text"
+              iconColor={theme.textSecondary}
+              label={t('paywall.terms')}
+              onPress={() => void Linking.openURL(websiteUrl('terms', i18n.language))}
             />
             <SettingsRow
               icon="information-circle"

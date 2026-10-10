@@ -4,7 +4,7 @@ import { defineConfig } from 'astro/config';
 // https://astro.build/config
 export default defineConfig({
   // Replaced by the real domain once it is bought (canonical URLs, sitemap).
-  site: process.env.SITE_URL ?? 'https://memoriq.vercel.app',
+  site: process.env.SITE_URL ?? 'https://memoriq-nine.vercel.app',
   i18n: {
     defaultLocale: 'fr',
     locales: ['fr', 'en'],

@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import Purchases, {
+  LOG_LEVEL,
   PRODUCT_CATEGORY,
   PURCHASES_ERROR_CODE,
   type CustomerInfo,
@@ -38,6 +39,15 @@ function applyCustomerInfo(info: CustomerInfo) {
 export function initPurchases(): void {
   if (configured || !apiKey || Platform.OS === "web") return;
   try {
+    // RevenueCat logs a cancelled purchase at error level, which raises the
+    // red dev overlay for an outcome the app handles normally: in dev, show
+    // its warnings and errors as warnings, drop the debug chatter, and stay
+    // silent in production.
+    Purchases.setLogHandler((level, message) => {
+      if (__DEV__ && (level === LOG_LEVEL.WARN || level === LOG_LEVEL.ERROR)) {
+        console.warn(`[RevenueCat] ${message}`);
+      }
+    });
     Purchases.configure({ apiKey });
     Purchases.addCustomerInfoUpdateListener(applyCustomerInfo);
     configured = true;

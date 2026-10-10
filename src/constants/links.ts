@@ -1,10 +1,21 @@
 /**
- * Legal pages shown on the paywall (Apple requires both for subscriptions).
- * Terms default to Apple's standard EULA; the privacy policy URL must be
- * filled in before submitting to the App Store (the link stays hidden while
- * it is empty).
+ * The Memoriq website (web/ in this repo, deployed on Vercel). Apple requires
+ * the privacy policy and terms to be reachable from the paywall, and a
+ * support URL on the App Store page. Change WEBSITE once a domain is bought.
  */
-export const LegalLinks = {
-  terms: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
-  privacy: '',
+export const WEBSITE = 'https://memoriq-nine.vercel.app';
+
+const PAGES = {
+  privacy: { fr: '/confidentialite', en: '/en/privacy' },
+  terms: { fr: '/conditions', en: '/en/terms' },
+  support: { fr: '/support', en: '/en/support' },
+  // Landing page of Supabase email links (sign-up confirmation, email change).
+  confirmed: { fr: '/compte/confirme', en: '/en/account/confirmed' },
 } as const;
+
+export type WebsitePage = keyof typeof PAGES;
+
+/** Absolute URL of a website page in the app language (French or English). */
+export function websiteUrl(page: WebsitePage, language: string): string {
+  return `${WEBSITE}${PAGES[page][language.startsWith('fr') ? 'fr' : 'en']}`;
+}
