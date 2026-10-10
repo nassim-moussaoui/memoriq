@@ -41,5 +41,5 @@ Phase 5 is wired: `src/lib/purchases.ts` (react-native-purchases; `isPremium` mi
 - Arabic text: `writingDirection: 'rtl'`, generous lineHeight (about 1.8x).
 - Colors via `useTheme()` from `src/hooks/use-theme` (light + dark both defined in `src/constants/theme.ts`; accent = `tint`).
 - SQLite access is synchronous (`getAllSync` etc.) and must stay off web (mobile-first).
-- Verify with: `npx tsc --noEmit`, `npx expo lint` (0 problems expected; react-hooks rules are strict: no ref access/setState during render) and, after any dependency change, `npx expo export --platform ios` (tsc and lint cannot see a module Metro fails to resolve).
+- Verify with: `npm test` (Jest, `src/**/__tests__`; the learning engine runs its real SQL on an in-memory SQLite through `test/expo-sqlite.ts`), `npx tsc --noEmit`, `npx expo lint` (0 problems expected; react-hooks rules are strict: no ref access/setState during render) and, after any dependency change, `npx expo export --platform ios` (tsc and lint cannot see a module Metro fails to resolve).
 - Keep `expo-glass-effect`, `expo-symbols` and `@expo/ui` installed even though `src/` never imports them: expo-router requires them internally without declaring them, and removing them breaks the bundle. Pin them to the versions compiled into the current native build.
