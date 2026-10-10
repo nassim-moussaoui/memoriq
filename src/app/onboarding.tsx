@@ -142,8 +142,15 @@ export default function OnboardingScreen() {
     } catch {
       // Reminders are a convenience: never block the start on them.
     }
-    if (alreadyCompleted) router.back();
-    else router.replace('/');
+    if (alreadyCompleted) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+    // First run only: offer Premium once, on top of Today, always closable.
+    if (!useAppStore.getState().isPremium) {
+      router.push({ pathname: '/paywall', params: { from: 'onboarding' } });
+    }
   };
 
   const id: StepId = STEPS[step];

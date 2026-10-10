@@ -365,7 +365,10 @@
     "close": "Fermer",
     "pendingTitle": "Paiement reçu",
     "pendingBody": "Ton paiement a bien été pris en compte, mais Premium ne s'est pas encore activé. Touche « Restaurer mes achats » pour réessayer. Si rien ne change, contacte-nous : ton achat est conservé.",
-    "contactSupport": "Contacter le support"
+    "contactSupport": "Contacter le support",
+    "onboardingTitle": "Ton plan est prêt",
+    "onboardingBody": "Al-Fatiha et le Juz' 'Amma sont à toi, gratuitement. Pour aller plus loin, Premium ouvre les 114 sourates, avec 7 jours offerts.",
+    "continueFree": "Continuer avec la version gratuite"
   },
   "chain": {
     "badge": "Enchaînement",

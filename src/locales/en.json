@@ -365,7 +365,10 @@
     "close": "Close",
     "pendingTitle": "Payment received",
     "pendingBody": "Your payment went through, but Premium has not turned on yet. Tap \"Restore purchases\" to try again. If nothing changes, contact us: your purchase is kept.",
-    "contactSupport": "Contact support"
+    "contactSupport": "Contact support",
+    "onboardingTitle": "Your plan is ready",
+    "onboardingBody": "Al-Fatiha and Juz' 'Amma are yours, for free. To go further, Premium opens all 114 surahs, with 7 days free.",
+    "continueFree": "Continue with the free version"
   },
   "chain": {
     "badge": "Chain",

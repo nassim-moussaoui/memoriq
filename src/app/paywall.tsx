@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -106,6 +106,10 @@ export default function PaywallScreen() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isPremium = useAppStore((s) => s.isPremium);
+  // Opened right after the onboarding: same offer, framed as the next step,
+  // with an explicit "continue for free" (the free plan stays complete).
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromOnboarding = from === 'onboarding' && !isPremium;
   const [load, setLoad] = useState<Load>({ state: 'loading' });
   const [plan, setPlan] = useState<Plan>('annual');
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
@@ -207,10 +211,10 @@ export default function PaywallScreen() {
           </Animated.View>
           <Animated.View entering={enter(1)} style={styles.heroText}>
             <ThemedText style={styles.title}>
-              {isPremium ? t('paywall.premiumTitle') : t('paywall.title')}
+              {isPremium ? t('paywall.premiumTitle') : fromOnboarding ? t('paywall.onboardingTitle') : t('paywall.title')}
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              {isPremium ? t('paywall.premiumBody') : t('paywall.subtitle')}
+              {isPremium ? t('paywall.premiumBody') : fromOnboarding ? t('paywall.onboardingBody') : t('paywall.subtitle')}
             </ThemedText>
           </Animated.View>
 
@@ -317,6 +321,17 @@ export default function PaywallScreen() {
                       : t('paywall.monthlyTerms', { price: selected.product.priceString })}
                 </ThemedText>
               ) : null}
+              {fromOnboarding ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.back()}
+                  hitSlop={8}
+                  style={({ pressed }) => [styles.freeButton, pressed && { opacity: 0.6 }]}>
+                  <ThemedText style={[styles.freeText, { color: theme.text }]}>
+                    {t('paywall.continueFree')}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
             </>
           )}
           <View style={styles.links}>
@@ -401,6 +416,8 @@ const styles = StyleSheet.create({
   },
   sadaqaIcon: { width: 38, height: 38, borderRadius: 19 },
   footer: { gap: Spacing.two, paddingTop: Spacing.two, paddingBottom: Spacing.two },
+  freeButton: { alignSelf: 'center', paddingVertical: Spacing.two, paddingHorizontal: Spacing.three },
+  freeText: { fontSize: 15.5, lineHeight: 20, fontWeight: 700 },
   fineprint: { fontSize: 12, lineHeight: 16, textAlign: 'center' },
   links: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two },
   link: { fontSize: 12.5, lineHeight: 17, fontWeight: 600 },
