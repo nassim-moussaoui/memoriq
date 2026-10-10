@@ -48,7 +48,7 @@ type AppState = {
   showTransliteration: boolean;
   arabicFontScale: number;
 
-  /** Premium entitlement, wired to RevenueCat in a later phase. */
+  /** Mirror of the RevenueCat "premium" entitlement (see lib/purchases). */
   isPremium: boolean;
 
   streak: number;
@@ -79,6 +79,7 @@ type AppState = {
   setShowTranslation: (v: boolean) => void;
   setShowTransliteration: (v: boolean) => void;
   setArabicFontScale: (v: number) => void;
+  setPremium: (v: boolean) => void;
   registerSessionDone: () => void;
   markSynced: (lastPushedLogId: number) => void;
   addPendingDeletes: (items: { surah: number; ayah: number }[]) => void;
@@ -132,6 +133,7 @@ export const useAppStore = create<AppState>()(
       setShowTranslation: (showTranslation) => set({ showTranslation }),
       setShowTransliteration: (showTransliteration) => set({ showTransliteration }),
       setArabicFontScale: (arabicFontScale) => set({ arabicFontScale }),
+      setPremium: (isPremium) => set({ isPremium }),
 
       registerSessionDone: () => {
         const today = localDay();

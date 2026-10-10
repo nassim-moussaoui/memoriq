@@ -9,9 +9,14 @@ import { AppState, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/splash-overlay';
 import { syncAppBadge } from '@/lib/notifications';
+import { initPurchases, linkPurchasesUser } from '@/lib/purchases';
+import { supabase } from '@/lib/supabase';
 import { syncNow } from '@/lib/sync';
 
 SplashScreen.preventAutoHideAsync();
+
+// RevenueCat before any screen asks whether the learner is Premium.
+initPurchases();
 
 // Reminders should still banner if the app happens to be open.
 Notifications.setNotificationHandler({
@@ -44,12 +49,17 @@ export default function RootLayout() {
         router.push('/session');
       }
     });
+    // Purchases follow the Supabase account across devices.
+    const auth = supabase?.auth.onAuthStateChange((_event, session) => {
+      void linkPurchasesUser(session?.user.id ?? null);
+    });
     const appState = AppState.addEventListener('change', () => {
       syncAppBadge().catch(() => {});
     });
     return () => {
       tap.remove();
       appState.remove();
+      auth?.data.subscription.unsubscribe();
     };
   }, []);
 
@@ -63,6 +73,7 @@ export default function RootLayout() {
         <Stack.Screen name="session" options={{ gestureEnabled: false }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
         <Stack.Screen name="account-edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="sadaqa" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

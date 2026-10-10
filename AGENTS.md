@@ -7,7 +7,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize surahs using scientifically proven learning methods. The full product plan lives in the approved plan file; short version:
 
 - **Differentiator**: every mechanic maps to a documented cognitive-science effect: spaced repetition (FSRS via `ts-fsrs`), active recall (the verse starts masked (soft per-word pills) and the learner reveals the phonetic transliteration word by word after reciting out loud; no voice recognition, Anki-style self-rating only), chunking into 3 to 5 verse segments, dual coding (text + per-ayah audio), the traditional hifz structure (sabaq/sabqi/manzil) presented with its prophetic sources in the onboarding.
-- **Monetization (phase 5, not wired yet)**: free = Al-Fatiha + Juz' 'Amma (surahs 78 to 114); premium via RevenueCat; "Sadaqa" = gift a subscription to a student (present as gifting, never as charity; Apple guideline 3.2.2).
+- **Monetization (phase 5, wired)**: free = Al-Fatiha + Juz' 'Amma (surahs 78 to 114); premium via RevenueCat; "Sadaqa" = gift a subscription to a student (present as gifting, never as charity; Apple guideline 3.2.2).
 - **Backend (phase 4, live)**: Supabase project `kawcqhogalppljvhgikj`: migrations `0001_init` + `0002_harden_functions` applied (6 tables, RLS on), anon key in `.env.local` (gitignored; see `.env.example`). SQLite on device stays the source of truth; `src/lib/sync.ts` does launch/post-session/manual sync (merge rule: FSRS card with more reps wins).
 - **Running the app**: development build (`expo-dev-client` + EAS), because the test phone's Expo Go is stuck on SDK 54. Start with `npx expo start --dev-client`.
 
@@ -28,7 +28,7 @@ Mobile app (Expo SDK 57, TypeScript, Expo Router) that helps Muslims memorize su
 
 Done: batches A (dead ends) and B (habit loop); the full redesign (onboarding, session, Today, library with search and filters, stats with heatmap and forecast, grouped settings, surah reader with per-verse status); chain recitation; reliability (route-level `ErrorBoundary` via `src/components/error-screen.tsx`, offline audio cache in `src/lib/audio-cache.ts` with session prefetch, background playback and lock screen info, password reset through the `memoriq://reset-password` deep link).
 
-Next: phase 5 (RevenueCat paywall and the Sadaqa gift flow). The Supabase dashboard must list `memoriq://**` under Auth, URL Configuration, Redirect URLs for the reset link to open the app.
+Phase 5 is wired: `src/lib/purchases.ts` (react-native-purchases; `isPremium` mirrors the RevenueCat `premium` entitlement, linked to the Supabase user id; `EXPO_PUBLIC_REVENUECAT_IOS_KEY`, `test_` = Test Store, `appl_` = App Store), `paywall.tsx` (annual with 7-day trial, monthly, restore, manage), `sadaqa.tsx` (gift a year, or join the waitlist). Server: migrations 0004/0005 and the `revenuecat-webhook` edge function (`supabase/functions/`), which mirrors subscriptions and assigns gifts to the longest-waiting student through a RevenueCat promotional entitlement; it needs the `REVENUECAT_WEBHOOK_SECRET` and `REVENUECAT_SECRET_KEY` (V1) secrets. Still to do before submission: a privacy policy URL in `src/constants/links.ts`. The Supabase dashboard must list `memoriq://**` under Auth, URL Configuration, Redirect URLs for the reset link to open the app.
 
 ## Conventions
 
