@@ -459,7 +459,7 @@
     "delete": "Delete my account",
     "deleteDetail": "And all associated data",
     "deleteTitle": "Delete your account?",
-    "deleteBody": "Your account and all data stored with it (progress, reviews, profile) will be deleted from the cloud, then this phone will be reset.",
+    "deleteBody": "Your account and all data stored with it (progress, reviews, profile) will be deleted from the cloud, then this phone will be reset. Note: your Apple subscription is not cancelled automatically. Cancel it in your iPhone Settings (your name, then Subscriptions) to stop being charged.",
     "deleteCta": "Continue",
     "deleteConfirmTitle": "Final confirmation",
     "deleteConfirmBody": "This cannot be undone. Your account cannot be recovered.",

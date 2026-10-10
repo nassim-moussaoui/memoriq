@@ -459,7 +459,7 @@
     "delete": "Supprimer mon compte",
     "deleteDetail": "Et toutes les données associées",
     "deleteTitle": "Supprimer ton compte ?",
-    "deleteBody": "Ton compte et toutes les données enregistrées avec (progression, révisions, profil) seront supprimés du cloud, puis ce téléphone sera remis à zéro.",
+    "deleteBody": "Ton compte et toutes les données enregistrées avec (progression, révisions, profil) seront supprimés du cloud, puis ce téléphone sera remis à zéro. Attention : ton abonnement Apple n'est pas résilié automatiquement. Résilie-le dans les Réglages de ton iPhone (ton nom, puis Abonnements) pour ne plus être débité.",
     "deleteCta": "Continuer",
     "deleteConfirmTitle": "Dernière confirmation",
     "deleteConfirmBody": "Cette action est irréversible. Ton compte ne pourra pas être récupéré.",
