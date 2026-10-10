@@ -33,8 +33,8 @@ db.execSync(`
  * Verses ticked as "already known" carry a `known` flag in their card JSON
  * (see srs/known.ts). They count as learned but are never scheduled: every
  * query feeding reviews (due items, next due date, review ahead, forecast,
- * badge) filters them out. A manual review drops the flag, and the verse
- * then follows normal spaced repetition.
+ * badge) filters them out. To work on such a surah again, the learner
+ * removes it from what they know (srs/known.ts) and learns it anew.
  */
 const SCHEDULED = "json_extract(card, '$.known') IS NULL";
 

@@ -7,9 +7,9 @@ import { newCard, rate, Rating, type Card } from "./scheduler";
 /**
  * A card created by "I already know this surah". The flag travels with the
  * card JSON (SQLite and Supabase): such verses count as learned but are never
- * scheduled (db.ts filters them out of every review query). The first manual
- * review drops the flag, since the scheduler returns a fresh card, and the
- * verse then follows normal spaced repetition.
+ * scheduled (db.ts filters them out of every review query). The scheduler
+ * drops the flag on any rating (a fresh card is returned), and "remove from
+ * what I know" deletes the cards so the surah can be learned anew.
  */
 type KnownCard = Card & { known?: true };
 
@@ -24,8 +24,8 @@ export function countUnstartedVerses(surahIds: number[]): number {
 /**
  * Marks surahs the learner already knows by heart (learned elsewhere): every
  * verse not started yet is recorded as learned, as if recited perfectly once,
- * without being scheduled for review. Reviewing them stays the learner's
- * choice ("Review this surah" in the reader). Nothing is written to the
+ * without being scheduled for review. A learner who feels one fading removes
+ * it from what they know and learns it again. Nothing is written to the
  * review log, so the daily new-verse cap and session stats stay untouched.
  * Returns the verses added.
  */

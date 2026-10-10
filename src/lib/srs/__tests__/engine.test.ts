@@ -21,7 +21,6 @@ import {
   buildChainQueue,
   buildReviewAheadPlan,
   buildSessionPlan,
-  buildSurahReviewQueue,
   sessionQueue,
 } from '../queue';
 import { newCard, previewIntervals, rate, Rating, State } from '../scheduler';
@@ -176,18 +175,6 @@ describe('already known surahs', () => {
     expect(getNextDueAt(now)).toBeNull();
     expect(getDueForecast(7, now)).toEqual([0, 0, 0, 0, 0, 0, 0]);
     expect([...getSurahStatuses(112, now).values()]).toEqual(['learned', 'learned', 'learned', 'learned']);
-  });
-
-  it('lets the learner review a known surah, which then follows spaced repetition', () => {
-    const now = Date.now();
-    markSurahsKnown([112], now - 60 * DAY);
-    const queue = buildSurahReviewQueue(112);
-    expect(queue.map((q) => (q.kind === 'chain' ? 'chain' : q.ayah))).toEqual([1, 2, 3, 4, 'chain']);
-
-    const verse1 = getItem(112, 1)!;
-    saveItem(112, 1, rate(verse1.card, Rating.Hard, new Date(now)));
-    expect(getKnownAyahs(112)).toEqual([2, 3, 4]);
-    expect(buildReviewAheadPlan().reviewItems.map((i) => i.ayah)).toEqual([1]);
   });
 
   it('skips verses already started', () => {

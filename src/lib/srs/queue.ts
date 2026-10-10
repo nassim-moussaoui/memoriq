@@ -53,17 +53,6 @@ export function sessionQueue(plan: SessionPlan): QueueItem[] {
 }
 
 /**
- * Manual review of one surah, on the learner's request (typically a surah
- * declared known, which is never scheduled): every started verse, in order,
- * followed by a chain of the whole surah when it is short.
- */
-export function buildSurahReviewQueue(surahId: number): QueueItem[] {
-  const ayahs = [...getStartedAyahs(surahId)].sort((a, b) => a - b);
-  const items: QueueItem[] = ayahs.map((ayah) => ({ surah: surahId, ayah, kind: "review" as const }));
-  return [...items, ...buildChainQueue(surahId)];
-}
-
-/**
  * Chain practice on one surah (manzil): one chain per segment whose verses
  * are all started; a short surah (7 verses or fewer) is chained whole.
  */
