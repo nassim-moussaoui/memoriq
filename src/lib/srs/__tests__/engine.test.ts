@@ -1,16 +1,27 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { localDay } from '@/lib/dates';
 import { getChapter } from '@/lib/quran';
 import { useAppStore } from '@/lib/store';
 
-import { getItem, getLogsAfter, getStartedAyahs, logReview, resetDatabase, saveItem } from '../db';
+import {
+  countDue,
+  getDueForecast,
+  getItem,
+  getLogsAfter,
+  getNextDueAt,
+  getStartedAyahs,
+  getSurahStatuses,
+  logReview,
+  resetDatabase,
+  saveItem,
+} from '../db';
 import { getKnownAyahs, markSurahsKnown, unmarkSurahKnown } from '../known';
 import {
   budgetFor,
   buildChainQueue,
   buildReviewAheadPlan,
   buildSessionPlan,
+  buildSurahReviewQueue,
   sessionQueue,
 } from '../queue';
 import { newCard, previewIntervals, rate, Rating, State } from '../scheduler';
@@ -147,7 +158,7 @@ describe('chain practice', () => {
 });
 
 describe('already known surahs', () => {
-  it('sends unstarted verses straight to review, without touching the review log', () => {
+  it('records unstarted verses as learned, without touching the review log', () => {
     const now = Date.now();
     const added = markSurahsKnown([112, 113], now);
     expect(added).toBe(4 + 5);
@@ -156,13 +167,27 @@ describe('already known surahs', () => {
     expect(buildSessionPlan(114, 10).newCapReached).toBe(false);
   });
 
-  it('brings a whole surah back on one day, spread between 7 and 45 days', () => {
+  it('never schedules them, even long after: they count as learned, not as due', () => {
     const now = Date.now();
-    markSurahsKnown([112, 113], now);
-    const firstCheck = (surah: number, ayah: number) => localDay(new Date(getItem(surah, ayah)!.dueAt));
-    expect(firstCheck(112, 1)).toBe(firstCheck(112, 4));
-    expect(firstCheck(112, 1)).toBe(localDay(new Date(now + 7 * DAY)));
-    expect(firstCheck(113, 1)).toBe(localDay(new Date(now + 45 * DAY)));
+    markSurahsKnown([112], now - 60 * DAY);
+    expect(countDue(now)).toBe(0);
+    expect(buildSessionPlan(114, 10).reviewItems).toEqual([]);
+    expect(buildReviewAheadPlan().reviewItems).toEqual([]);
+    expect(getNextDueAt(now)).toBeNull();
+    expect(getDueForecast(7, now)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect([...getSurahStatuses(112, now).values()]).toEqual(['learned', 'learned', 'learned', 'learned']);
+  });
+
+  it('lets the learner review a known surah, which then follows spaced repetition', () => {
+    const now = Date.now();
+    markSurahsKnown([112], now - 60 * DAY);
+    const queue = buildSurahReviewQueue(112);
+    expect(queue.map((q) => (q.kind === 'chain' ? 'chain' : q.ayah))).toEqual([1, 2, 3, 4, 'chain']);
+
+    const verse1 = getItem(112, 1)!;
+    saveItem(112, 1, rate(verse1.card, Rating.Hard, new Date(now)));
+    expect(getKnownAyahs(112)).toEqual([2, 3, 4]);
+    expect(buildReviewAheadPlan().reviewItems.map((i) => i.ayah)).toEqual([1]);
   });
 
   it('skips verses already started', () => {

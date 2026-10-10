@@ -29,6 +29,15 @@ db.execSync(`
   );
 `);
 
+/**
+ * Verses ticked as "already known" carry a `known` flag in their card JSON
+ * (see srs/known.ts). They count as learned but are never scheduled: every
+ * query feeding reviews (due items, next due date, review ahead, forecast,
+ * badge) filters them out. A manual review drops the flag, and the verse
+ * then follows normal spaced repetition.
+ */
+const SCHEDULED = "json_extract(card, '$.known') IS NULL";
+
 export type ItemRow = {
   surah: number;
   ayah: number;
@@ -81,7 +90,7 @@ export function logReview(surah: number, ayah: number, rating: number, now: numb
 /** All items due for review, most overdue first. */
 export function getDueItems(now: number = Date.now(), limit = 50): ItemRow[] {
   const rows = db.getAllSync<RawRow>(
-    "SELECT * FROM memorization_items WHERE due_at <= ? ORDER BY due_at ASC LIMIT ?",
+    `SELECT * FROM memorization_items WHERE due_at <= ? AND ${SCHEDULED} ORDER BY due_at ASC LIMIT ?`,
     [now, limit]
   );
   return rows.map(toItem);
@@ -90,7 +99,7 @@ export function getDueItems(now: number = Date.now(), limit = 50): ItemRow[] {
 /** Timestamp of the next scheduled review strictly in the future, or null. */
 export function getNextDueAt(now: number = Date.now()): number | null {
   const row = db.getFirstSync<{ next: number | null }>(
-    "SELECT MIN(due_at) AS next FROM memorization_items WHERE due_at > ?",
+    `SELECT MIN(due_at) AS next FROM memorization_items WHERE due_at > ? AND ${SCHEDULED}`,
     [now]
   );
   return row?.next ?? null;
@@ -99,7 +108,7 @@ export function getNextDueAt(now: number = Date.now()): number | null {
 /** The soonest scheduled (not yet due) items, for reviewing ahead of time. */
 export function getSoonestItems(limit = 12, now: number = Date.now()): ItemRow[] {
   const rows = db.getAllSync<RawRow>(
-    "SELECT * FROM memorization_items WHERE due_at > ? ORDER BY due_at ASC LIMIT ?",
+    `SELECT * FROM memorization_items WHERE due_at > ? AND ${SCHEDULED} ORDER BY due_at ASC LIMIT ?`,
     [now, limit]
   );
   return rows.map(toItem);
@@ -107,7 +116,7 @@ export function getSoonestItems(limit = 12, now: number = Date.now()): ItemRow[]
 
 export function countDue(now: number = Date.now()): number {
   const row = db.getFirstSync<{ n: number }>(
-    "SELECT COUNT(*) AS n FROM memorization_items WHERE due_at <= ?",
+    `SELECT COUNT(*) AS n FROM memorization_items WHERE due_at <= ? AND ${SCHEDULED}`,
     [now]
   );
   return row?.n ?? 0;
@@ -255,7 +264,7 @@ export function getDueForecast(days = 7, now: number = Date.now()): number[] {
   const end = new Date(start);
   end.setDate(end.getDate() + days);
   const rows = db.getAllSync<{ due_at: number }>(
-    "SELECT due_at FROM memorization_items WHERE due_at < ?",
+    `SELECT due_at FROM memorization_items WHERE due_at < ? AND ${SCHEDULED}`,
     [end.getTime()]
   );
   const counts = new Array<number>(days).fill(0);
@@ -286,14 +295,14 @@ export type VerseStatus = "learning" | "due" | "learned";
  * waiting, "learned" once in Review state, "learning" otherwise.
  */
 export function getSurahStatuses(surah: number, now: number = Date.now()): Map<number, VerseStatus> {
-  const rows = db.getAllSync<{ ayah: number; due_at: number; state: number }>(
-    "SELECT ayah, due_at, state FROM memorization_items WHERE surah = ?",
+  const rows = db.getAllSync<{ ayah: number; due_at: number; state: number; known: number | null }>(
+    "SELECT ayah, due_at, state, json_extract(card, '$.known') AS known FROM memorization_items WHERE surah = ?",
     [surah]
   );
   return new Map(
     rows.map((r) => [
       r.ayah,
-      r.due_at <= now ? "due" : r.state === State.Review ? "learned" : "learning",
+      r.known ? "learned" : r.due_at <= now ? "due" : r.state === State.Review ? "learned" : "learning",
     ])
   );
 }

@@ -299,6 +299,30 @@ export default function SurahScreen() {
       {knownCount > 0 ? (
         <Pressable
           accessibilityRole="button"
+          onPress={() => {
+            stopAll();
+            router.push({ pathname: '/session', params: { mode: 'surah', surah: String(surahId) } });
+          }}
+          style={({ pressed }) => [
+            styles.chainCard,
+            { backgroundColor: theme.backgroundElement, transform: [{ scale: pressed ? 0.98 : 1 }] },
+          ]}>
+          <View style={[styles.chainIcon, { backgroundColor: theme.info + '22' }]}>
+            <Ionicons name="refresh" size={18} color={theme.info} />
+          </View>
+          <View style={styles.flex}>
+            <ThemedText style={styles.chainTitle}>{t('known.reviewTitle')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.chainDesc}>
+              {t('known.reviewDesc')}
+            </ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
+
+      {knownCount > 0 ? (
+        <Pressable
+          accessibilityRole="button"
           onPress={unmarkKnown}
           style={({ pressed }) => [
             styles.chainCard,
