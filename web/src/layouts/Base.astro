@@ -104,6 +104,21 @@ const year = new Date().getFullYear();
         { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
       );
       document.querySelectorAll('.reveal, .draw').forEach((el) => observer.observe(el));
+
+      // Pointer light on cards.
+      document.querySelectorAll<HTMLElement>('.spot').forEach((el) => {
+        el.addEventListener('pointermove', (e) => {
+          const r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+          el.style.setProperty('--my', `${e.clientY - r.top}px`);
+        });
+      });
+
+      // The header tightens with a shadow once the page scrolls.
+      const header = document.querySelector('.site-header');
+      const onScroll = () => header?.classList.toggle('scrolled', window.scrollY > 8);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
     </script>
   </body>
 </html>
@@ -118,11 +133,29 @@ const year = new Date().getFullYear();
     -webkit-backdrop-filter: saturate(180%) blur(16px);
     border-bottom: 1px solid var(--border);
   }
+  .site-header {
+    transition:
+      box-shadow 0.3s ease,
+      background-color 0.3s ease;
+  }
+  .site-header.scrolled {
+    box-shadow: 0 8px 24px -16px rgba(0, 0, 0, 0.35);
+  }
   .header-row {
     display: flex;
     align-items: center;
     gap: 24px;
     height: 68px;
+    transition: height 0.3s ease;
+  }
+  .scrolled .header-row {
+    height: 58px;
+  }
+  .brand img {
+    transition: transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .brand:hover img {
+    transform: rotate(-8deg) scale(1.08);
   }
   .brand {
     display: inline-flex;

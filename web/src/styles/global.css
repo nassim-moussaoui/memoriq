@@ -229,3 +229,37 @@ p {
     margin-bottom: 32px;
   }
 }
+
+/* Cards that lift on hover with a soft light following the pointer
+   (--mx/--my are set by the script in Base.astro). */
+.spot {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.35s ease;
+}
+.spot::before {
+  content: ;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--tint) 14%, transparent),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+@media (hover: hover) {
+  .spot:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+  }
+  .spot:hover::before {
+    opacity: 1;
+  }
+}

@@ -36,17 +36,39 @@ const reviews = [
 const spacedPath = `M${reviews.flatMap((r, i) => decay(r.day, reviews[i + 1]?.day ?? 30, r.s)).join(' L')}`;
 
 const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as const;
+const titleWords = t.hero.title.split(' ');
+const accentWords = t.hero.titleAccent.split(' ');
+// Fixed positions (no randomness: identical on every build).
+const sparkles = [
+  { x: 8, y: 22, size: 10, delay: 0, dur: 6 },
+  { x: 18, y: 70, size: 7, delay: 1.2, dur: 7 },
+  { x: 30, y: 12, size: 6, delay: 2.4, dur: 5.5 },
+  { x: 72, y: 16, size: 9, delay: 0.6, dur: 6.5 },
+  { x: 86, y: 58, size: 11, delay: 1.8, dur: 7.5 },
+  { x: 92, y: 26, size: 6, delay: 3, dur: 6 },
+  { x: 64, y: 80, size: 7, delay: 2, dur: 8 },
+];
 ---
 
 <section class="hero">
   <div class="hero-bg" aria-hidden="true">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
     <Khatam class="hero-star" />
   </div>
   <div class="container hero-grid">
     <div class="hero-copy">
       <span class="eyebrow reveal">{t.hero.eyebrow}</span>
-      <h1 class="reveal">
-        {t.hero.title}<br /><span class="accent">{t.hero.titleAccent}</span>
+      <h1 aria-label={`${t.hero.title} ${t.hero.titleAccent}`}>
+        <span aria-hidden="true">
+          {titleWords.map((w, i) => <span class="w" style={`--d:${120 + i * 90}ms`}>{w}</span>)}
+          <br />
+          <span class="accent">
+            {accentWords.map((w, i) => (
+              <span class="w" style={`--d:${120 + (titleWords.length + i) * 90}ms`}>{w}</span>
+            ))}
+          </span>
+        </span>
       </h1>
       <p class="lead reveal">{t.hero.body}</p>
       <div class="hero-ctas reveal">
@@ -70,9 +92,11 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     </div>
   </div>
   <div class="container">
-    <ul class="strip reveal">
-      {t.strip.map((item) => <li>{item}</li>)}
-    </ul>
+    <div class="strip reveal" aria-label={t.strip.join(', ')}>
+      <ul class="marquee" aria-hidden="true">
+        {[...t.strip, ...t.strip, ...t.strip, ...t.strip].map((item) => <li>{item}</li>)}
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -85,7 +109,7 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     <div class="science-grid">
       {
         t.science.cards.map((card, i) => (
-          <article class="science-card reveal" style={`transition-delay:${i * 90}ms`}>
+          <article class="science-card spot reveal" style={`transition-delay:${i * 90}ms`}>
             <div class="chart draw">
               <svg viewBox={`0 0 ${W} 150`} role="img" aria-label={card.title}>
                 <line x1={left} x2={right} y1={y(1)} y2={y(1)} class="grid" />
@@ -137,7 +161,9 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
       <h2>{t.sunna.title}</h2>
     </div>
     <figure class="verse reveal">
-      <p class="arabic verse-ar" lang="ar">{qamar.ar}</p>
+      <p class="arabic verse-ar" lang="ar" aria-label={qamar.ar}>
+        {qamar.ar.split(/\s+/).map((w, i) => <span class="vw" style={`--d:${i * 140}ms`}>{w}</span>)}
+      </p>
       <figcaption>
         <p class="verse-tr">{app.welcomeVerse}</p>
         <cite>{app.welcomeVerseSource}</cite>
@@ -146,7 +172,7 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     <div class="hadith-grid">
       {
         app.hadiths.map((h, i) => (
-          <article class="hadith reveal" style={`transition-delay:${i * 80}ms`}>
+          <article class="hadith spot reveal" style={`transition-delay:${i * 80}ms`}>
             <h3>{h.title}</h3>
             <blockquote>{h.quote}</blockquote>
             <p class="source">
@@ -171,10 +197,10 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
       <span class="eyebrow">{t.how.eyebrow}</span>
       <h2>{t.how.title}</h2>
     </div>
-    <ol class="steps">
+    <ol class="steps draw">
       {
         t.how.steps.map((step, i) => (
-          <li class="step reveal" style={`transition-delay:${i * 80}ms`}>
+          <li class="step spot reveal" style={`transition-delay:${i * 120}ms; --d:${300 + i * 220}ms`}>
             <span class="step-num" aria-hidden="true"><span>{i + 1}</span></span>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
@@ -194,7 +220,7 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     <div class="features">
       {
         t.features.items.map((f, i) => (
-          <article class="feature reveal" style={`transition-delay:${(i % 3) * 80}ms`}>
+          <article class="feature spot reveal" style={`transition-delay:${(i % 3) * 80}ms`}>
             <span class="feature-icon" aria-hidden="true">
               <Icon name={featureIcons[i]} />
             </span>
@@ -214,13 +240,13 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
       <h2>{t.pricing.title}</h2>
     </div>
     <div class="plans">
-      <article class="plan reveal">
+      <article class="plan spot reveal">
         <h3>{t.pricing.free.name}</h3>
         <p class="price">{t.pricing.free.price}</p>
         <p class="period">{t.pricing.free.period}</p>
         <ul>{t.pricing.free.items.map((item) => <li>{item}</li>)}</ul>
       </article>
-      <article class="plan plan-premium reveal" style="transition-delay:90ms">
+      <article class="plan plan-premium spot reveal" style="transition-delay:90ms">
         <span class="plan-badge">{t.pricing.premium.badge}</span>
         <h3>{t.pricing.premium.name}</h3>
         <p class="price">{t.pricing.premium.price}</p>
@@ -266,6 +292,11 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
 
 <section class="final">
   <div class="container final-card reveal">
+    <div class="sparkles" aria-hidden="true">
+      {sparkles.map((sp) => (
+        <span style={`left:${sp.x}%; top:${sp.y}%; --s:${sp.size}px; --d:${sp.delay}s; --t:${sp.dur}s`}></span>
+      ))}
+    </div>
     <img src="/brand/memoriq-logo.svg" alt="" width="72" height="72" />
     <h2>{t.final.title}</h2>
     <p>{t.final.body}</p>
@@ -288,6 +319,63 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
       radial-gradient(60% 50% at 85% 20%, color-mix(in srgb, var(--tint) 18%, transparent), transparent 70%),
       radial-gradient(50% 45% at 5% 90%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 70%);
   }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  .blob-a {
+    width: 420px;
+    height: 420px;
+    right: -60px;
+    top: -80px;
+    background: color-mix(in srgb, var(--tint) 45%, transparent);
+  }
+  .blob-b {
+    width: 320px;
+    height: 320px;
+    left: -80px;
+    bottom: -60px;
+    background: color-mix(in srgb, var(--gold) 35%, transparent);
+    animation-duration: 22s;
+    animation-direction: alternate-reverse;
+  }
+  @keyframes drift {
+    to {
+      transform: translate(-60px, 50px) scale(1.15);
+    }
+  }
+  h1 .w {
+    display: inline-block;
+    margin-inline-end: 0.24em;
+    opacity: 0;
+    transform: translateY(0.45em) rotate(2deg);
+    animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation-delay: var(--d);
+  }
+  @keyframes rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  h1 .accent .w {
+    background: linear-gradient(90deg, var(--tint), color-mix(in srgb, var(--tint) 50%, var(--gold)), var(--tint));
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation:
+      rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards var(--d),
+      shimmer 6s ease-in-out infinite 1.5s;
+  }
+  @keyframes shimmer {
+    50% {
+      background-position: 100% 0;
+    }
+  }
   :global(.hero-star) {
     position: absolute;
     width: 760px;
@@ -296,6 +384,14 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     color: var(--tint);
     opacity: 0.09;
     animation: spin 160s linear infinite;
+  }
+  @keyframes spin-center {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
   }
   @keyframes spin {
     to {
@@ -370,19 +466,35 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
   }
   .strip {
     position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px 32px;
-    list-style: none;
     margin: 56px 0 0;
     padding: 20px 0 0;
     border-top: 1px solid var(--border);
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .marquee {
+    display: flex;
+    gap: 40px;
+    width: max-content;
+    list-style: none;
+    margin: 0;
+    padding: 0;
     color: var(--muted);
     font-weight: 600;
     font-size: 15px;
+    white-space: nowrap;
+    animation: marquee 32s linear infinite;
   }
-  .strip li::before {
+  .strip:hover .marquee {
+    animation-play-state: paused;
+  }
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .marquee li::before {
     content: '✓';
     color: var(--tint);
     font-weight: 800;
@@ -517,6 +629,7 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     color: #f1f7f4;
   }
   .sunna-bg :global(.sunna-star) {
+    animation: spin-center 200s linear infinite;
     position: absolute;
     width: 900px;
     left: 50%;
@@ -538,6 +651,23 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     text-align: center;
     display: grid;
     gap: 16px;
+  }
+  .vw {
+    display: inline-block;
+    margin-inline-end: 0.28em;
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+    transition:
+      opacity 0.8s ease,
+      filter 0.8s ease,
+      transform 0.8s ease;
+    transition-delay: var(--d);
+  }
+  :global(.verse.is-visible) .vw {
+    opacity: 1;
+    filter: none;
+    transform: none;
   }
   .verse-ar {
     font-size: clamp(30px, 4.6vw, 44px);
@@ -608,6 +738,7 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
 
   /* Steps */
   .steps {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
@@ -644,6 +775,34 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     font-weight: 800;
     transform: rotate(45deg);
     margin: 6px 0 8px 6px;
+  }
+  .steps::before {
+    content: '';
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 47px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--tint), var(--gold));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.6s cubic-bezier(0.6, 0, 0.2, 1) 0.2s;
+    z-index: 0;
+  }
+  :global(.steps.is-visible)::before {
+    transform: scaleX(1);
+  }
+  .step {
+    z-index: 1;
+  }
+  .step-num {
+    scale: 0;
+    transition: scale 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
+    transition-delay: var(--d);
+  }
+  :global(.steps.is-visible) .step-num {
+    scale: 1;
   }
   .step-num > span {
     transform: rotate(-45deg);
@@ -850,7 +1009,35 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
   .final {
     padding: 0 0 96px;
   }
+  .sparkles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .sparkles span {
+    position: absolute;
+    width: var(--s);
+    height: var(--s);
+    background: #f6d77e;
+    clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+    opacity: 0;
+    animation: twinkle var(--t) ease-in-out infinite;
+    animation-delay: var(--d);
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0;
+      transform: translateY(8px) scale(0.6) rotate(0deg);
+    }
+    50% {
+      opacity: 0.9;
+      transform: translateY(-10px) scale(1) rotate(45deg);
+    }
+  }
   .final-card {
+    position: relative;
+    overflow: hidden;
     display: grid;
     justify-items: center;
     gap: 16px;
@@ -861,6 +1048,8 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     color: #ffffff;
   }
   .final-card img {
+    position: relative;
+    animation: float-logo 6s ease-in-out infinite;
     border-radius: 18px;
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
   }
@@ -873,7 +1062,15 @@ const featureIcons = ['target', 'bell', 'download', 'chart', 'check', 'sync'] as
     font-size: 18px;
   }
 
+  @keyframes float-logo {
+    50% {
+      transform: translateY(-8px) rotate(-3deg);
+    }
+  }
   @media (max-width: 960px) {
+    .steps::before {
+      display: none;
+    }
     .hero-grid,
     .faq-wrap,
     .sadaqa-card {

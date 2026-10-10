@@ -3,9 +3,10 @@ import content from '../generated/app-content.json';
 import { useTranslations, type Lang } from '../i18n';
 
 /**
- * A faithful HTML rendition of the app's recite step (no screenshot needed):
- * the verse of Al-Ikhlas with two words revealed and two still hidden behind
- * breathing pills, then the rating cards.
+ * A faithful HTML rendition of the app's recite step, playing a session on a
+ * loop: the hidden words of Al-Ikhlas 1 are revealed one by one (a tap ripple
+ * lands on each), the rating cards light up, "Got it" is chosen and the
+ * progress bar moves on. Static (fully revealed) with reduced motion.
  */
 interface Props {
   lang: Lang;
@@ -15,7 +16,6 @@ const t = useTranslations(lang).mock;
 const verse = content.verses.ikhlas1;
 const arabicWords = verse.ar.split(/\s+/);
 const phoneticWords = verse.tr.split(/\s+/);
-const revealed = new Set([0, 1]);
 const ratings = [
   { key: 'again', label: t.again, when: t.againWhen },
   { key: 'hard', label: t.hard, when: t.hardWhen },
@@ -24,64 +24,137 @@ const ratings = [
 ];
 ---
 
-<div class="phone" role="img" aria-label={`${t.ref}: ${verse.tr}`}>
-  <div class="screen">
-    <div class="notch"></div>
-    <div class="bar">
-      <span class="close">×</span>
-      <span class="progress"><span></span></span>
-      <span class="count">3/8</span>
-    </div>
-    <div class="ctx">
-      <span class="chip"><i></i>{t.step}</span>
-      <span class="ref">{t.ref}</span>
-    </div>
-    <div class="card">
-      <p class="arabic ar" lang="ar">
-        {
-          arabicWords.map((w, i) =>
-            revealed.has(i) ? (
-              <span class="word">{w}</span>
-            ) : (
-              <span class="word masked" style={`--i:${i}`}>
-                {w}
-              </span>
-            ),
-          )
-        }
-      </p>
-      <div class="sep"></div>
-      <p class="tr">
-        {
-          phoneticWords.map((w, i) =>
-            revealed.has(i) ? (
-              <span class="word on">{w}</span>
-            ) : (
-              <span class="word masked" style={`--i:${i}`}>
-                {w}
-              </span>
-            ),
-          )
-        }
-      </p>
-      <span class="tap" aria-hidden="true"></span>
-    </div>
-    <p class="hint">{t.hint}</p>
-    <p class="question">{t.question}</p>
-    <div class="ratings">
-      {
-        ratings.map((r) => (
-          <div class={`rating ${r.key}`}>
-            <strong>{r.label}</strong>
-            <span>{r.when}</span>
-          </div>
-        ))
-      }
+<div class="phone-wrap">
+  <div class="phone" role="img" aria-label={`${t.ref}: ${verse.tr}`} data-phone>
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="bar">
+        <span class="close">×</span>
+        <span class="progress"><span data-progress></span></span>
+        <span class="count" data-count>3/8</span>
+      </div>
+      <div class="ctx">
+        <span class="chip"><i></i>{t.step}</span>
+        <span class="ref">{t.ref}</span>
+      </div>
+      <div class="card" data-card>
+        <p class="arabic ar" lang="ar">
+          {arabicWords.map((w, i) => <span class:list={['word', { masked: i > 0 }]} data-word={i} style={`--i:${i}`}>{w}</span>)}
+        </p>
+        <div class="sep"></div>
+        <p class="tr">
+          {phoneticWords.map((w, i) => <span class:list={['word ph', { masked: i > 0 }]} data-word={i} style={`--i:${i}`}>{w}</span>)}
+        </p>
+        <span class="tap" data-tap aria-hidden="true"></span>
+      </div>
+      <p class="hint" data-hint>{t.hint}</p>
+      <div class="rate" data-rate>
+        <p class="question">{t.question}</p>
+        <div class="ratings">
+          {
+            ratings.map((r) => (
+              <div class={`rating ${r.key}`} data-rating={r.key}>
+                <strong>{r.label}</strong>
+                <span>{r.when}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
+<script>
+  // The session loop. Runs only while the phone is on screen, never with
+  // reduced motion (the mock then shows the finished state).
+  const phone = document.querySelector<HTMLElement>('[data-phone]');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (phone && reduce) {
+    // No loop: show the finished state (verse revealed, ratings ready).
+    phone.querySelectorAll('[data-word]').forEach((w) => w.classList.remove('masked'));
+    phone.querySelector('[data-rate]')?.classList.add('ready');
+  } else if (phone) {
+    const card = phone.querySelector<HTMLElement>('[data-card]')!;
+    const tap = phone.querySelector<HTMLElement>('[data-tap]')!;
+    const rate = phone.querySelector<HTMLElement>('[data-rate]')!;
+    const hint = phone.querySelector<HTMLElement>('[data-hint]')!;
+    const good = phone.querySelector<HTMLElement>('[data-rating="good"]')!;
+    const progress = phone.querySelector<HTMLElement>('[data-progress]')!;
+    const count = phone.querySelector<HTMLElement>('[data-count]')!;
+    const words = (i: number) => phone.querySelectorAll<HTMLElement>(`[data-word="${i}"]`);
+    const total = phone.querySelectorAll('.ar [data-word]').length;
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let visible = false;
+    let running = false;
+
+    const reset = () => {
+      phone.querySelectorAll<HTMLElement>('[data-word]').forEach((w) => {
+        w.classList.toggle('masked', Number(w.dataset.word) > 0);
+        w.classList.remove('just');
+      });
+      rate.classList.remove('ready');
+      good.classList.remove('chosen');
+      hint.classList.remove('gone');
+      progress.style.width = '34%';
+      count.textContent = '3/8';
+    };
+
+    const tapOn = (el: HTMLElement) => {
+      const a = el.getBoundingClientRect();
+      const b = card.getBoundingClientRect();
+      tap.style.left = `${a.left - b.left + a.width / 2 - 15}px`;
+      tap.style.top = `${a.top - b.top + a.height / 2 - 15}px`;
+      tap.classList.remove('go');
+      void tap.offsetWidth;
+      tap.classList.add('go');
+    };
+
+    const play = async () => {
+      if (running) return;
+      running = true;
+      while (visible) {
+        reset();
+        await wait(1100);
+        for (let i = 1; i < total && visible; i++) {
+          const targets = words(i);
+          tapOn(targets[0]);
+          await wait(260);
+          targets.forEach((w) => {
+            w.classList.remove('masked');
+            w.classList.add('just');
+          });
+          await wait(900);
+        }
+        hint.classList.add('gone');
+        rate.classList.add('ready');
+        await wait(1300);
+        tapOn(good);
+        await wait(240);
+        good.classList.add('chosen');
+        progress.style.width = '46%';
+        count.textContent = '4/8';
+        await wait(2200);
+      }
+      running = false;
+    };
+
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) void play();
+    }).observe(phone);
+  }
+</script>
+
 <style>
+  .phone-wrap {
+    animation: float 7s ease-in-out infinite;
+  }
+  @keyframes float {
+    50% {
+      transform: translateY(-12px);
+    }
+  }
   .phone {
     width: min(330px, 86vw);
     aspect-ratio: 9 / 18.5;
@@ -147,6 +220,10 @@ const ratings = [
     height: 100%;
     border-radius: 3px;
     background: var(--tint);
+    transition: width 0.6s cubic-bezier(0.3, 1.3, 0.5, 1);
+  }
+  .count {
+    font-variant-numeric: tabular-nums;
   }
   .ctx {
     display: flex;
@@ -182,9 +259,11 @@ const ratings = [
     background: var(--surface);
     text-align: center;
   }
+  /* .arabic sets direction: rtl, so a plain row already starts on the right
+     (row-reverse, needed in React Native, would flip it back to LTR here). */
   .ar {
     display: flex;
-    flex-direction: row-reverse;
+    flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     gap: 2px 10px;
@@ -208,21 +287,43 @@ const ratings = [
   }
   .word {
     position: relative;
+    display: inline-block;
+    transition:
+      color 0.45s ease,
+      transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1);
   }
-  .word.on {
+  .word.ph {
     color: var(--tint);
   }
-  .word.masked {
-    color: transparent;
-  }
-  .word.masked::after {
+  .word::after {
     content: '';
     position: absolute;
     inset: 24% -2px;
     border-radius: 999px;
     background: var(--surface-2);
+    opacity: 0;
+    transform: scale(0.6, 0.4);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+  }
+  .word.masked {
+    color: transparent;
+    transform: translateY(5px);
+  }
+  .word.masked::after {
+    opacity: 1;
+    transform: none;
     animation: breathe 2.4s ease-in-out infinite;
     animation-delay: calc(var(--i) * -0.22s);
+  }
+  .word.just {
+    animation: pop 0.5s ease;
+  }
+  @keyframes pop {
+    40% {
+      transform: translateY(-4px) scale(1.08);
+    }
   }
   @keyframes breathe {
     50% {
@@ -231,26 +332,26 @@ const ratings = [
   }
   .tap {
     position: absolute;
-    left: 32%;
-    top: 34%;
+    left: 40%;
+    top: 30%;
     width: 30px;
     height: 30px;
     border-radius: 50%;
     border: 2px solid var(--tint);
+    background: color-mix(in srgb, var(--tint) 18%, transparent);
     opacity: 0;
-    animation: tap 2.8s ease-out infinite 1s;
+    pointer-events: none;
+  }
+  .tap.go {
+    animation: tap 0.7s ease-out;
   }
   @keyframes tap {
     0% {
-      transform: scale(0.4);
-      opacity: 0;
+      transform: scale(0.3);
+      opacity: 0.9;
     }
-    15% {
-      opacity: 0.8;
-    }
-    60%,
     100% {
-      transform: scale(1.6);
+      transform: scale(1.8);
       opacity: 0;
     }
   }
@@ -258,9 +359,26 @@ const ratings = [
     font-size: 12px;
     color: var(--muted);
     text-align: center;
+    transition: opacity 0.4s ease;
+  }
+  .hint.gone {
+    opacity: 0;
+  }
+  .rate {
+    margin-top: auto;
+    display: grid;
+    gap: 10px;
+    opacity: 0.35;
+    transform: translateY(8px);
+    transition:
+      opacity 0.5s ease,
+      transform 0.5s ease;
+  }
+  .rate.ready {
+    opacity: 1;
+    transform: none;
   }
   .question {
-    margin-top: auto;
     font-size: 13px;
     font-weight: 700;
     text-align: center;
@@ -271,12 +389,17 @@ const ratings = [
     gap: 8px;
   }
   .rating {
+    position: relative;
     display: grid;
     gap: 2px;
     padding: 10px 12px;
     border-radius: 16px;
     background: var(--surface);
     border: 1.5px solid;
+    transition:
+      transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1),
+      background-color 0.35s ease,
+      box-shadow 0.35s ease;
   }
   .rating strong {
     font-size: 14px;
@@ -308,5 +431,19 @@ const ratings = [
   }
   .rating.good strong {
     color: var(--tint);
+  }
+  .rating.chosen {
+    transform: scale(1.06);
+    background: var(--tint-soft);
+    box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--tint) 60%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .phone-wrap {
+      animation: none;
+    }
+    .rate {
+      opacity: 1;
+      transform: none;
+    }
   }
 </style>
