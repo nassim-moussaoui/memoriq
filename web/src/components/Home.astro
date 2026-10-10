@@ -93,9 +93,15 @@ const sparkles = [
   </div>
   <div class="container">
     <div class="strip reveal" aria-label={t.strip.join(', ')}>
-      <ul class="marquee" aria-hidden="true">
-        {[...t.strip, ...t.strip, ...t.strip, ...t.strip].map((item) => <li>{item}</li>)}
-      </ul>
+      <div class="marquee" aria-hidden="true">
+        {[0, 1].map(() => (
+          <ul>
+            {[...t.strip, ...t.strip].map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        ))}
+      </div>
     </div>
   </div>
 </section>
@@ -465,44 +471,38 @@ const sparkles = [
     display: flex;
     justify-content: center;
   }
+  /* Full-bleed: the strip runs edge to edge of the window, not the container. */
   .strip {
     position: relative;
-    margin: 56px 0 0;
+    width: 100vw;
+    margin: 56px 0 0 calc(50% - 50vw);
     padding: 20px 0 0;
     border-top: 1px solid var(--border);
     overflow: hidden;
+    /* A true transparent fade on both edges, whatever is behind the strip. */
+    mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
   }
-  .strip::before,
-  .strip::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 12%;
-    z-index: 1;
-    pointer-events: none;
-  }
-  .strip::before {
-    left: 0;
-    background: linear-gradient(90deg, var(--bg), transparent);
-  }
-  .strip::after {
-    right: 0;
-    background: linear-gradient(-90deg, var(--bg), transparent);
-  }
+  /* Two identical halves, each item carrying its own trailing space: moving
+     by exactly -50% lands on a copy of the start, so the loop has no seam. */
   .marquee {
     display: flex;
-    gap: 40px;
     width: max-content;
-    list-style: none;
-    margin: 0;
-    padding: 0;
     color: var(--muted);
     font-weight: 600;
     font-size: 15px;
     white-space: nowrap;
     will-change: transform;
-    animation: marquee 32s linear infinite;
+    animation: marquee 36s linear infinite;
+  }
+  .marquee ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .marquee li {
+    padding-right: 44px;
   }
   .strip:hover .marquee {
     animation-play-state: paused;
